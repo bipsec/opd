@@ -47,7 +47,23 @@ Items are never filtered. `answer types` uses the same math-verify classificatio
 
 ## Contamination filter (step 2.3)
 
-TBD (step 2.3).
+Training prompts sharing any 13-gram (lower-cased [a-z0-9]+ word tokens) with an evaluation item are dropped. Pool: 37080 → **36665** (dropped 415; 2259 train–eval pairs) in `data/pool/pool_clean.parquet` (sha256 `8264b101c87262f6`).
+
+| Suite | Eval items | Too short to match | Eval items hit | Training prompts dropped | Near copies: eval items / training prompts |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| gsm8k | 1319 | 0 | 0 | 0 | 0 / 0 |
+| math500 | 500 | 51 | 54 | 241 | 16 / 21 |
+| amc23 | 40 | 1 | 11 | 42 | 0 / 0 |
+| aime24 | 30 | 0 | 9 | 228 | 0 / 0 |
+| aime25 | 30 | 0 | 11 | 202 | 0 / 0 |
+| aime26 | 30 | 0 | 10 | 209 | 0 / 0 |
+| hmmt_feb26 | 33 | 0 | 1 | 1 | 0 / 0 |
+
+Diagnostic, not dropped: 0 training prompts exactly equal (same tokens) an evaluation item too short for a 13-gram (none).
+
+**Not checked (suite not built):** gpqa_diamond. Re-run `qopd data decontaminate` after building them.
+
+Near copy: the pair shares >= 50% of the evaluation item's n-grams (likely the same problem). Other hits are mostly shared contest boilerplate (e.g. "... where m and n are relatively prime positive integers. Find m+n"); per the doc they are dropped too. A prompt matching several suites counts once per suite. Every drop, with its evaluation ids and an example n-gram, is in `data/contamination/dropped.jsonl`.
 
 ## Splits and manifest (step 2.4)
 

@@ -17,7 +17,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from qopd.config import PROJECT_ROOT, DataCfg
+from qopd.config import PROJECT_ROOT, DataCfg, project_relative
 from qopd.data.filters import classify_answer, normalize_text, normalize_whitespace, self_verifies
 from qopd.data.sources import DatasetNotFoundError, load_rows, write_parquet
 from qopd.types import Problem, ProblemKind
@@ -186,7 +186,7 @@ def build_suite(src: EvalSource, out_dir: Path) -> dict[str, Any]:
         "file_sha256_source": sha256_file(path),
         "n": len(problems),
         "expected_n": src.expected_n,
-        "output": str((out_dir / f"{src.suite}.parquet").relative_to(PROJECT_ROOT)),
+        "output": project_relative(out_dir / f"{src.suite}.parquet"),
         "sha256": sha,
         "answer_types": dict(sorted(types.items())),
         "not_self_verifying": sum(1 for p in math_items if not p.meta["self_verifies"]),

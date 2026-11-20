@@ -24,13 +24,15 @@ def write_report(ddir: Path, report: Path = REPORT) -> Path:
         ("Training pool (step 2.1)", ddir / "pool" / "pool_stats.json", pool.report_section),
         ("Evaluation suites (step 2.2)", ddir / "eval" / "eval_stats.json",
          evalsets.report_section),
+        ("Contamination filter (step 2.3)", ddir / "contamination" / "contamination_stats.json",
+         pool.contamination_report_section),
     ]
     for title, path, render in sections:
         if path.exists():
             lines += render(io.read_json(path))
         else:
             lines += [f"## {title}", "", "TBD (not built yet).", ""]
-    for title in ("Contamination filter (step 2.3)", "Splits and manifest (step 2.4)"):
+    for title in ("Splits and manifest (step 2.4)",):
         lines += [f"## {title}", "", f"TBD ({title.split('(')[1].rstrip(')')}).", ""]
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text("\n".join(lines))

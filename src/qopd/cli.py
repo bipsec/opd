@@ -302,6 +302,27 @@ def data_evals(
         console.print(f"{name:13s} {r['status']:8s} {extra}", markup=False)
 
 
+@data_app.command("decontaminate")
+def data_decontaminate(
+    config: Annotated[Path, typer.Option(help="DataCfg YAML.")] = Path("configs/data/default.yaml"),
+) -> None:
+    """Drop pool prompts with 13-gram overlap against the eval suites (PLAN 2.3)."""
+    from qopd.config import DataCfg, load  # noqa: PLC0415
+    from qopd.data.pool import decontaminate  # noqa: PLC0415
+
+    st = decontaminate(load(config, cls=DataCfg))
+    console.print(
+        f"pool {st['pool_in']} -> {st['pool_out']} (dropped {st['dropped']})", markup=False
+    )
+    for s, r in st["per_suite"].items():
+        console.print(
+            f"  {s:13s} eval_hit={r['eval_items_hit']:4d} train_dropped={r['train_dropped']}",
+            markup=False,
+        )
+    if st["suites_not_checked"]:
+        console.print(f"not checked: {', '.join(st['suites_not_checked'])}", markup=False)
+
+
 @data_app.command("report")
 def data_report() -> None:
     """Re-render reports/data.md from the stats files."""

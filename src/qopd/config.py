@@ -24,6 +24,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_ROOT = PROJECT_ROOT / "configs"
 
 
+def project_relative(path: Path) -> str:
+    """``path`` relative to the project root when inside it, else absolute (for reports)."""
+    path = Path(path).resolve()
+    try:
+        return str(path.relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(path)
+
+
 class Cfg(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
