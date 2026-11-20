@@ -67,4 +67,27 @@ Near copy: the pair shares >= 50% of the evaluation item's n-grams (likely the s
 
 ## Splits and manifest (step 2.4)
 
-TBD (step 2.4).
+From `data/pool/pool_clean.parquet` (sha256 `8264b101c87262f6`), seed 0: ordered by sha256(seed:id), then cut in order train → calibration → probe; cold-start is the first part of train. Calibration and probe are disjoint from train and from each other. Unused (reserve): 19653.
+
+| Split | Problems | File | sha256 |
+| --- | ---: | --- | --- |
+| train | 16000 | `data/splits/train.parquet` | `3c22f34faa722daf` |
+| coldstart | 5000 | `data/splits/coldstart.parquet` | `296b59855cb9cec7` |
+| calibration | 512 | `data/splits/calibration.parquet` | `7dffc645b088bbfe` |
+| probe | 500 | `data/splits/probe.parquet` | `2ed0a24b7ec12961` |
+
+Evaluation files recorded in the manifest:
+
+| Suite | Items | sha256 |
+| --- | ---: | --- |
+| aime24 | 30 | `46c27c49b77be210` |
+| aime25 | 30 | `ba905c1632b70193` |
+| aime26 | 30 | `1f7c942485b323c9` |
+| amc23 | 40 | `a282089d6d215187` |
+| gsm8k | 1319 | `a03651a072783521` |
+| hmmt_feb26 | 33 | `4b0aab777b65e991` |
+| math500 | 500 | `e4f518cf77b980f9` |
+
+**Not built (TBD):** gpqa_diamond — the pool was decontaminated against gsm8k, math500, amc23, aime24, aime25, aime26, hmmt_feb26 only. After building a missing suite, re-run `qopd data decontaminate` and `qopd data splits`.
+
+`data/manifest.json` (tracked in git) holds counts, file sha256 and a sha256 over sorted ids for every file; `qopd data verify` checks them.

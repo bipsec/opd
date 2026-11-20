@@ -323,6 +323,36 @@ def data_decontaminate(
         console.print(f"not checked: {', '.join(st['suites_not_checked'])}", markup=False)
 
 
+@data_app.command("splits")
+def data_splits(
+    config: Annotated[Path, typer.Option(help="DataCfg YAML.")] = Path("configs/data/default.yaml"),
+) -> None:
+    """Fixed-seed splits + data/manifest.json (PLAN 2.4)."""
+    from qopd.config import DataCfg, load  # noqa: PLC0415
+    from qopd.data.splits import build_splits  # noqa: PLC0415
+
+    m = build_splits(load(config, cls=DataCfg))
+    for name, e in m["splits"].items():
+        console.print(f"{name:12s} n={e['n']:6d} sha256={e['sha256'][:12]}", markup=False)
+    console.print(f"reserve={m['reserve']}  eval_not_built={m['eval_not_built']}", markup=False)
+
+
+@data_app.command("verify")
+def data_verify(
+    manifest: Annotated[Path, typer.Option(help="Manifest file.")] = Path("data/manifest.json"),
+) -> None:
+    """Check every file listed in the manifest against its recorded hashes."""
+    from qopd.data.splits import ManifestMismatchError, verify_manifest  # noqa: PLC0415
+
+    try:
+        m = verify_manifest(manifest)
+    except ManifestMismatchError as e:
+        console.print(f"FAIL {e}", markup=False)
+        raise typer.Exit(1) from e
+    n = 1 + len(m["splits"]) + len(m.get("eval", {}))
+    console.print(f"ok: {n} files match {manifest}", markup=False)
+
+
 @data_app.command("report")
 def data_report() -> None:
     """Re-render reports/data.md from the stats files."""
