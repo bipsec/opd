@@ -1,0 +1,9 @@
+# Development and testing.
+
+-r base.txt
+
+pytest>=8
+pytest-timeout>=2.3
+ruff>=0.5
+pre-commit>=3.7
+ipykernel>=6.29           # notebooks/ only; nothing in src/ depends on it

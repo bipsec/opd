@@ -1,0 +1,16 @@
+# Quantization toolchain for building the teacher ladder (Phase 4).
+# Install only when Phase 4 starts. Some packages compile CUDA kernels on
+# aarch64; install them one at a time and record any failure in PROGRESS.md.
+
+-r base.txt
+
+llmcompressor>=0.5        # FP8 W8A8 and INT4 AWQ (W4A16); NVFP4 if supported by the installed version
+nvidia-modelopt>=0.27     # NVFP4 alternative path
+gptqmodel>=2.0            # 3-bit GPTQ, group size 128
+gguf>=0.10                # Python helpers for GGUF files (2-bit fallback rung)
+
+# AutoAWQ is deliberately left out: the project was archived in 2025 and its
+# AWQ support moved into llm-compressor. Use llm-compressor for T4-int.
+#
+# llama.cpp (for the GGUF fallback backend) is built from source with CUDA,
+# not pip-installed. See REQUIREMENTS.md.

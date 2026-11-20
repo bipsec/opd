@@ -1,0 +1,14 @@
+# Spark nodes (CLAUDE.md "Two Sparks"). Validated by qopd.config.ClusterCfg (step 0.3).
+# The peer is used only when required and only when its own job has finished.
+env_file: .env            # holds PASSWD; read via SSH_ASKPASS, never printed
+nodes:
+  - name: local
+    hostname: promaxgb10-4caf
+    host: 192.168.100.10
+    user: biplab.sarkar
+    role: primary
+  - name: peer
+    hostname: promaxgb10-4efc
+    host: 192.168.100.11
+    user: biplab.sarkar
+    role: secondary

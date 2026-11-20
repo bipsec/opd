@@ -1,0 +1,34 @@
+# secrets
+.env
+.env.*
+
+# experiment outputs and large artifacts
+runs/
+models/
+checkpoints/
+data/raw/
+data/cache/
+wandb/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.cache/
+
+# probe output that is machine-specific JSON (env.md is kept)
+reports/env.*.json
+.claude/*
+CLAUDE.md
+PROGRESS.md
+REQUIREMENTS.md
+PLAN.md

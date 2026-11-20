@@ -1,0 +1,26 @@
+# qopd development image: NGC vLLM container + requirements/dev.txt.
+# torch, vllm, flash-attn and triton come from the base image and are pinned
+# (together with every other preinstalled package) by a generated constraints file.
+ARG BASE=nvcr.io/nvidia/vllm:26.10-py3
+FROM ${BASE}
+
+COPY requirements/ /opt/qopd/requirements/
+COPY docker/make_constraints.py /opt/qopd/make_constraints.py
+
+RUN python /opt/qopd/make_constraints.py > /opt/qopd/base-constraints.txt \
+ && python -c "import torch; print(torch.__version__)" > /opt/qopd/torch-version.base \
+ && pip install --no-cache-dir -r /opt/qopd/requirements/dev.txt -c /opt/qopd/base-constraints.txt \
+ && python -c "import torch; print(torch.__version__)" > /opt/qopd/torch-version.after \
+ && cmp /opt/qopd/torch-version.base /opt/qopd/torch-version.after \
+ && echo "torch unchanged: $(cat /opt/qopd/torch-version.after)"
+
+# The repo is bind-mounted at /workspace/opd; import it from there (no editable install needed).
+ENV PYTHONPATH=/workspace/opd/src \
+    HF_HOME=/hf \
+    WANDB_MODE=offline \
+    PYTHONDONTWRITEBYTECODE=1
+RUN printf '#!/bin/sh\nexec python -m qopd "$@"\n' > /usr/local/bin/qopd \
+ && chmod 755 /usr/local/bin/qopd \
+ && mkdir -p /tmp/home && chmod 1777 /tmp/home
+
+WORKDIR /workspace/opd
