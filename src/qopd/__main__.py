@@ -2,4 +2,5 @@
 
 from qopd.cli import app
 
-app(prog_name="qopd")
+if __name__ == "__main__":  # guard: vLLM worker processes may re-import this module
+    app(prog_name="qopd")

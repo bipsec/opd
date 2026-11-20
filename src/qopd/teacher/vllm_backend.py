@@ -1,33 +1,155 @@
 """vLLM teacher backend (PLAN 1.3).
 
-Feed ``prompt_ids + response_ids`` as the prompt with ``prompt_logprobs=top_k`` and
-``max_tokens=1``, then slice out the response positions. Note: the resident vLLM server
-is started with ``--max-logprobs 20``; our own engine sets ``max_logprobs >= top_k``.
+Each rollout's ``prompt_ids + response_ids`` is sent as a token prompt with
+``prompt_logprobs=top_k`` and ``max_tokens=1``; the response positions are sliced out.
+vLLM returns, for every prompt position j >= 1, the log-prob of the actual token
+``input_ids[j]`` plus the top-k alternatives. ``logprobs_mode="raw_logprobs"`` means the
+values come from the raw logits (no temperature / top-k / top-p processing).
+
+Memory (GB10 unified memory): the KV cache is sized in bytes
+(``kv_cache_memory_bytes``) and ``gpu_memory_utilization`` is a small explicit share, so
+the engine stays small next to other processes (vLLM's startup check needs that share to
+fit in free memory). Prefix caching is off so every position's logits are computed.
 """
 
 from __future__ import annotations
 
+import gc
+import os
 from collections.abc import Sequence
+from typing import Any
 
-from qopd.teacher.base import TeacherScorer
+from qopd.prompts.templates import check_teacher_input
+from qopd.teacher.base import TeacherScorer, check_scores
 from qopd.types import Rollout, TeacherScores
+from qopd.utils.logging import get_logger
+from qopd.utils.memory import track_memory
+
+log = get_logger("teacher.vllm")
+
+
+def _position_items(pos: Any) -> list[tuple[int, Any]]:
+    """(token_id, Logprob) pairs of one prompt position (dict or flat-logprobs view)."""
+    if pos is None:
+        return []
+    return list(pos.items())
+
+
+def scores_from_prompt_logprobs(
+    prompt_logprobs: Sequence[Any], input_ids: Sequence[int], n_prompt: int, top_k: int
+) -> TeacherScores:
+    """Turn vLLM ``prompt_logprobs`` for one sequence into :class:`TeacherScores`."""
+    token_lp: list[float] = []
+    topk_ids: list[list[int]] = []
+    topk_lp: list[list[float]] = []
+    for j in range(n_prompt, len(input_ids)):
+        items = _position_items(prompt_logprobs[j])
+        by_id = dict(items)
+        actual = int(input_ids[j])
+        if actual not in by_id:
+            raise RuntimeError(f"vLLM returned no log-prob for the realized token at {j}")
+        token_lp.append(float(by_id[actual].logprob))
+        if top_k:
+            ranked = sorted(
+                ((lp.rank, tid, lp.logprob) for tid, lp in items if lp.rank is not None),
+                key=lambda x: x[0],
+            )[:top_k]
+            topk_ids.append([int(t) for _, t, _ in ranked])
+            topk_lp.append([float(v) for _, _, v in ranked])
+    return TeacherScores(token_lp, topk_ids, topk_lp)
 
 
 class VLLMTeacher(TeacherScorer):
     backend = "vllm"
 
     def __init__(
-        self, model_path: str, gpu_memory_utilization: float, max_model_len: int | None = None
+        self,
+        model_path: str,
+        revision: str | None = None,
+        kv_cache_gb: float = 4.0,
+        gpu_memory_utilization: float = 0.12,
+        max_model_len: int | None = None,
+        max_logprobs: int = 20,
+        dtype: str = "bfloat16",
+        enforce_eager: bool = False,
+        seed: int = 0,
+        quantization: str | None = None,
     ) -> None:
         super().__init__(model_path)
+        self.revision = revision
+        self.kv_cache_gb = kv_cache_gb
+        # vLLM's startup check compares this share of total (unified) memory with free
+        # memory even when the KV cache is sized in bytes; keep it small and explicit.
         self.gpu_memory_utilization = gpu_memory_utilization
         self.max_model_len = max_model_len
+        self.max_logprobs = max_logprobs
+        self.dtype = dtype
+        self.enforce_eager = enforce_eager
+        self.seed = seed
+        self.quantization = quantization
+        self.llm: Any = None
 
     def start(self) -> None:
-        raise NotImplementedError("step 1.3")
+        if self.llm is not None:
+            return
+        # spawn, not fork: the parent may already hold a CUDA context (e.g. an HF model).
+        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+        from vllm import LLM  # noqa: PLC0415
+
+        with track_memory(f"load vLLM teacher {self.model_path}", log):
+            self.llm = LLM(
+                model=self.model_path,
+                revision=self.revision,
+                dtype=self.dtype,
+                seed=self.seed,
+                max_model_len=self.max_model_len,
+                max_logprobs=self.max_logprobs,
+                logprobs_mode="raw_logprobs",
+                kv_cache_memory_bytes=int(self.kv_cache_gb * 1024**3),
+                gpu_memory_utilization=self.gpu_memory_utilization,
+                enable_prefix_caching=False,
+                enforce_eager=self.enforce_eager,
+                quantization=self.quantization,
+                generation_config="vllm",  # never inherit the model's sampling defaults
+            )
 
     def stop(self) -> None:
-        raise NotImplementedError("step 1.3")
+        if self.llm is None:
+            return
+        with track_memory(f"unload vLLM teacher {self.model_path}", log):
+            engine = getattr(self.llm, "llm_engine", None)
+            shutdown = getattr(engine, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
+            self.llm = None
+            gc.collect()
+            try:
+                import torch  # noqa: PLC0415
+
+                torch.cuda.empty_cache()
+            except ImportError:
+                pass
 
     def score(self, rollouts: Sequence[Rollout], top_k: int) -> list[TeacherScores]:
-        raise NotImplementedError("step 1.3")
+        if self.llm is None:
+            raise RuntimeError("call start() first")
+        if top_k > self.max_logprobs:
+            raise ValueError(f"top_k={top_k} exceeds max_logprobs={self.max_logprobs}")
+        from vllm import SamplingParams  # noqa: PLC0415
+        from vllm.inputs import TokensPrompt  # noqa: PLC0415
+
+        params = SamplingParams(
+            max_tokens=1, prompt_logprobs=max(top_k, 1), temperature=1.0, detokenize=False
+        )
+        prompts = [TokensPrompt(prompt_token_ids=r.input_ids) for r in rollouts]
+        outputs = self.llm.generate(prompts, params, use_tqdm=False)
+        scores = []
+        for r, out in zip(rollouts, outputs, strict=True):
+            check_teacher_input(r, out.prompt_token_ids)
+            scores.append(
+                scores_from_prompt_logprobs(
+                    out.prompt_logprobs, out.prompt_token_ids, len(r.prompt_ids), top_k
+                )
+            )
+        check_scores(rollouts, scores, top_k)
+        return scores

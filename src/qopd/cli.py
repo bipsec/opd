@@ -28,6 +28,8 @@ models_app = typer.Typer(
     help="Model registry, downloads and tokenizer checks.", no_args_is_help=True
 )
 app.add_typer(models_app, name="models")
+teacher_app = typer.Typer(help="Teacher scoring backends.", no_args_is_help=True)
+app.add_typer(teacher_app, name="teacher")
 
 
 def _print_version(value: bool) -> None:
@@ -219,6 +221,25 @@ def models_tokcheck(
         failed |= not diff.identical
         console.print(f"{status} {teacher} vs {sid}: {diff.summary()}", markup=False)
     if failed:
+        raise typer.Exit(1)
+
+
+@teacher_app.command("agree")
+def teacher_agree(
+    model: Annotated[str, typer.Option(help="Stand-in teacher id.")] = "S2",
+    n: Annotated[int, typer.Option(help="Number of sequences.")] = 20,
+    max_tokens: Annotated[int, typer.Option(help="Max response tokens.")] = 512,
+    top_k: Annotated[int, typer.Option(help="Top-k log-probs.")] = 20,
+    seed: Annotated[int, typer.Option()] = 0,
+    kv_cache_gb: Annotated[float, typer.Option(help="vLLM KV cache size (GB).")] = 4.0,
+) -> None:
+    """vLLM vs HF backend agreement (PLAN 1.3); writes runs/agreement/<run_id>/."""
+    from qopd.teacher.agreement import run_agreement  # noqa: PLC0415
+
+    summary = run_agreement(model, n, max_tokens, top_k, seed, kv_cache_gb)
+    for k, v in summary.items():
+        console.print(f"{k:26s} {v}", markup=False)
+    if not summary["pass"]:
         raise typer.Exit(1)
 
 

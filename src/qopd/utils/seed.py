@@ -21,8 +21,9 @@ def seed_everything(seed: int, deterministic: bool = False) -> None:
     except ImportError:
         return
     torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    # Lazy: queued until CUDA is first used, so it does not initialise CUDA here (an early
+    # CUDA init breaks vLLM's forked engine process).
+    torch.cuda.manual_seed_all(seed)
     if deterministic:
         torch.use_deterministic_algorithms(True, warn_only=True)
         torch.backends.cudnn.benchmark = False

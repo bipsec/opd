@@ -28,6 +28,8 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ANN", "PL"]
 ignore = [
   "ANN401",   # Any is fine at stub/probe boundaries
   "PLR0913",  # research functions take many knobs
+  "PLR0917",  # ... often positionally (typer commands, backend constructors)
+  "PLR0915",  # long orchestration functions read top to bottom
   "PLR2004",  # magic numbers are config defaults in tests
   "RUF001",   # unicode in docstrings (×, −)
   "RUF002",
