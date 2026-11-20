@@ -127,6 +127,28 @@ def test_plan_defaults():
     assert (sft.lr, sft.epochs) == (1e-5, 1)
 
 
+def test_doc_training_details():
+    """EXPERIMENT_PLAN "Training details settled in build step 0.3"."""
+    opd = load(CONFIG_ROOT / "train" / "opd.yaml")
+    sft = load(CONFIG_ROOT / "train" / "sft.yaml")
+    for opt in (opd.optimizer, sft.optimizer):
+        assert opt.name == "adamw"
+        assert opt.betas == (0.9, 0.999)
+        assert opt.eps == 1e-8
+        assert opt.weight_decay == 0.0
+        assert opt.grad_clip_norm == 1.0
+    assert opd.loss_averaging == sft.loss_averaging == "batch_tokens"
+    assert (opd.warmup_rounds, opd.schedule, opd.truncation_alert) == (5, "warmup_constant", 0.30)
+    assert (sft.global_batch_size, sft.warmup_ratio, sft.min_lr_ratio) == (32, 0.03, 0.1)
+    assert (sft.max_seq_len, sft.drop_overlong, sft.packing) == (8192, True, False)
+    data = load(CONFIG_ROOT / "data" / "default.yaml")
+    assert (data.near_dup_ngram, data.near_dup_num_perm, data.near_dup_threshold) == (5, 128, 0.8)
+    for path in (CONFIG_ROOT / "quant").glob("*.yaml"):
+        cal = load(path).calibration
+        assert cal is not None
+        assert (cal.n_samples, cal.max_seq_len, cal.text_source) == (512, 2048, "t16_traces")
+
+
 def test_experiment_defaults_compose():
     exp = load(CONFIG_ROOT / "experiments" / "e0_pilot.yaml")
     assert exp.opd is not None and exp.opd.rounds == 20  # inline wins

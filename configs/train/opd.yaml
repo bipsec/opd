@@ -1,12 +1,23 @@
-# OPD defaults (PLAN 0.3). Everything the grid uses is frozen into configs/frozen.yaml in 6.5.
+# OPD defaults (EXPERIMENT_PLAN: Recipe, Hyperparameters, "Training details settled in 0.3").
+# Everything the grid uses is frozen into configs/frozen.yaml in 6.5.
 prompts_per_round: 64
 rollouts_per_prompt: 4
 rounds: 100
 optimizer_steps_per_round: 1
 teacher_top_k: 20
 checkpoint_every: 20
-lr: null                  # set by the 6.5 sweep (5e-7, 1e-6, 2e-6), then frozen
-optimizer: null           # TBD (experiment-plan doc)
+lr: null                  # set by the 6.5 sweep (5e-7, 1e-6, 2e-6, T16 only), then frozen
+optimizer:
+  name: adamw
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 0.0
+  grad_clip_norm: 1.0
+micro_batch_size: null    # memory knob only (all 256 rollouts = one step); set in the pilot
+loss_averaging: batch_tokens  # mean over all response tokens in the batch
+warmup_rounds: 5          # linear warmup, then constant
+schedule: warmup_constant
+truncation_alert: 0.30    # revisit limits if > 30% of round-0 rollouts are truncated
 mode: null                # co_resident | phase_alternating, chosen at the 6.4 gate
 weight_sync: reload_from_checkpoint
 loss:

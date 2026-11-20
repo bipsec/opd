@@ -72,9 +72,14 @@ class ModelCfg(Cfg):
 
 
 class CalibrationCfg(Cfg):
+    """Doc: 512 calibration prompts, each paired with a BF16-teacher reasoning trace in chat
+    format, cut at 2,048 tokens; the same texts for every rung (generated in PLAN 4.1)."""
+
     split: str = "calibration"
     n_samples: int = Field(512, gt=0)
-    max_seq_len: int | None = None  # TBD (experiment-plan doc)
+    text_source: Literal["t16_traces"] = "t16_traces"
+    chat_format: bool = True
+    max_seq_len: int = Field(2048, gt=0)
 
 
 class QuantCfg(Cfg):
@@ -101,7 +106,10 @@ class DataCfg(Cfg):
     n_calibration: int = Field(512, gt=0)  # disjoint from train
     n_probe: int = Field(500, gt=0)  # disjoint from train (E1)
     contamination_ngram: int = Field(13, gt=0)
-    near_dup_threshold: float | None = Field(None, gt=0, le=1)  # TBD (step 2.1)
+    # Doc: MinHash on word 5-grams, 128 permutations, Jaccard >= 0.8 is a duplicate.
+    near_dup_ngram: int = Field(5, gt=0)
+    near_dup_num_perm: int = Field(128, gt=0)
+    near_dup_threshold: float = Field(0.8, gt=0, le=1)
     data_dir: str = "data"
 
     @model_validator(mode="after")
@@ -126,6 +134,16 @@ class SamplingCfg(Cfg):
 # --- training -------------------------------------------------------------------
 
 
+class OptimizerCfg(Cfg):
+    """Doc (settled in 0.3): AdamW, betas 0.9/0.999, eps 1e-8, no weight decay, clip 1.0."""
+
+    name: Literal["adamw"] = "adamw"
+    betas: tuple[float, float] = (0.9, 0.999)
+    eps: float = Field(1e-8, gt=0)
+    weight_decay: float = Field(0.0, ge=0)
+    grad_clip_norm: float | None = Field(1.0, gt=0)
+
+
 class LoopMode(StrEnum):
     CO_RESIDENT = "co_resident"
     PHASE_ALTERNATING = "phase_alternating"
@@ -145,7 +163,13 @@ class OPDCfg(Cfg):
     teacher_top_k: int = Field(20, gt=0)
     checkpoint_every: int = Field(20, gt=0)
     lr: float | None = Field(None, gt=0)  # set by the 6.5 sweep, then frozen
-    optimizer: str | None = None  # TBD (experiment-plan doc)
+    optimizer: OptimizerCfg = Field(default_factory=OptimizerCfg)
+    # Doc: all 256 rollouts form one batch -> one optimizer step via gradient accumulation.
+    micro_batch_size: int | None = Field(None, gt=0)  # memory knob only; set in the pilot
+    loss_averaging: Literal["batch_tokens"] = "batch_tokens"  # mean over all response tokens
+    warmup_rounds: int = Field(5, ge=0)  # linear warmup, then constant
+    schedule: Literal["warmup_constant"] = "warmup_constant"
+    truncation_alert: float = Field(0.30, gt=0, le=1)  # doc: revisit limits if round-0 > 30%
     mode: LoopMode | None = None  # chosen at the 6.4 gate
     weight_sync: str = "reload_from_checkpoint"
     loss: OPDLossCfgModel = Field(default_factory=OPDLossCfgModel)
@@ -155,14 +179,21 @@ class OPDCfg(Cfg):
 class SFTCfg(Cfg):
     lr: float = Field(1e-5, gt=0)
     epochs: float = Field(1, gt=0)
-    optimizer: str = "adamw"
+    optimizer: OptimizerCfg = Field(default_factory=OptimizerCfg)
     dtype: str = "bfloat16"
     gradient_checkpointing: bool = True
     response_only_loss: bool = True
-    batch_size: int | None = None  # TBD (experiment-plan doc / step 5.2)
-    max_seq_len: int | None = None  # TBD
-    warmup_ratio: float | None = None  # TBD
-    weight_decay: float | None = None  # TBD
+    loss_averaging: Literal["batch_tokens"] = "batch_tokens"
+    global_batch_size: int = Field(32, gt=0)  # sequences per optimizer step
+    micro_batch_size: int | None = Field(None, gt=0)  # memory knob only; set in step 5.2
+    # Doc: linear warmup over 3% of steps, cosine decay to 10% of peak.
+    schedule: Literal["warmup_cosine"] = "warmup_cosine"
+    warmup_ratio: float = Field(0.03, ge=0, lt=1)
+    min_lr_ratio: float = Field(0.1, ge=0, le=1)
+    # Doc: 8,192 tokens prompt + response; longer traces dropped (not truncated); no packing.
+    max_seq_len: int = Field(8192, gt=0)
+    drop_overlong: bool = True
+    packing: bool = False
 
 
 # --- evaluation -----------------------------------------------------------------

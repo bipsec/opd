@@ -4,9 +4,11 @@ scheme: NVFP4
 tool: null              # ModelOpt or llm-compressor, decided in step 4.2
 weight_bits: 4
 group_size: null        # block size is defined by the NVFP4 format
-calibration:
+calibration:             # doc: same texts for every rung (built in PLAN 4.1)
   split: calibration
   n_samples: 512
-  max_seq_len: null     # TBD (experiment-plan doc)
+  text_source: t16_traces  # BF16-teacher reasoning trace per prompt
+  chat_format: true
+  max_seq_len: 2048
 optional: false
 params: {}

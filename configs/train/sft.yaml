@@ -1,11 +1,21 @@
-# Cold-start SFT and off-policy SFT baseline (PLAN 5.2, 8.2).
+# Cold-start SFT and off-policy SFT baseline (EXPERIMENT_PLAN "Training details settled in 0.3").
 lr: 1.0e-5
 epochs: 1
-optimizer: adamw
+optimizer:
+  name: adamw
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 0.0
+  grad_clip_norm: 1.0
 dtype: bfloat16
 gradient_checkpointing: true
 response_only_loss: true
-batch_size: null          # TBD (experiment-plan doc / step 5.2)
-max_seq_len: null         # TBD
-warmup_ratio: null        # TBD
-weight_decay: null        # TBD
+loss_averaging: batch_tokens  # mean over all response tokens in the batch
+global_batch_size: 32     # sequences per optimizer step
+micro_batch_size: null    # memory knob only; set in step 5.2
+schedule: warmup_cosine
+warmup_ratio: 0.03        # linear warmup over 3% of steps
+min_lr_ratio: 0.1         # cosine decay to 10% of peak
+max_seq_len: 8192         # prompt + response
+drop_overlong: true       # longer traces dropped, not truncated
+packing: false
