@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -95,3 +96,41 @@ def track_memory(tag: str, logger: logging.Logger | None = None) -> Iterator[Non
     (logger or get_logger("memory")).info(
         "[mem] %s: delta used=%+.1fGB", tag, after.mem_used_gb - before.mem_used_gb
     )
+
+
+class PeakMemory:
+    """Background sampler of system memory in use (GB10: unified) and its peak.
+
+    ``with PeakMemory() as pm: ...`` then read ``pm.peak_used_gb`` / ``pm.min_available_gb``.
+    """
+
+    def __init__(self, interval_s: float = 0.2) -> None:
+        self.interval_s = interval_s
+        self.peak_used_gb = 0.0
+        self.min_available_gb = float("inf")
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def _sample(self) -> None:
+        mi = read_meminfo()
+        used = (mi["MemTotal"] - mi["MemAvailable"]) / _GB_KB
+        self.peak_used_gb = max(self.peak_used_gb, used)
+        self.min_available_gb = min(self.min_available_gb, mi["MemAvailable"] / _GB_KB)
+
+    def _loop(self) -> None:
+        while True:
+            self._sample()
+            if self._stop.wait(self.interval_s):
+                break
+
+    def __enter__(self) -> PeakMemory:
+        self._sample()
+        self._thread = threading.Thread(target=self._loop, name="qopd-peakmem", daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=5)
+        self._sample()

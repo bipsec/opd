@@ -13,35 +13,12 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from qopd.data.smoke import SMOKE_PROBLEMS as AGREEMENT_PROBLEMS
 from qopd.types import FinishReason, Problem, Rollout, TeacherScores
 from qopd.utils.logging import get_logger
 
 log = get_logger("teacher.agreement")
 THRESHOLD_NATS = 0.02  # PLAN 1.3
-
-# Hand-written, not taken from any benchmark (no contamination concern).
-AGREEMENT_PROBLEMS: tuple[str, ...] = (
-    "What is 17 + 26?",
-    "Compute 12 times 13.",
-    "What is the remainder when 100 is divided by 7?",
-    "Simplify the fraction 84/126.",
-    "Solve for x: 3x + 5 = 20.",
-    "What is the sum of the first 10 positive integers?",
-    "A rectangle has sides 6 and 9. What is its area?",
-    "What is 2 to the power 10?",
-    "Find the greatest common divisor of 48 and 180.",
-    "How many minutes are there in 3.5 hours?",
-    "What is the least common multiple of 4, 6 and 10?",
-    "If a train travels 150 km in 2 hours, what is its average speed in km/h?",
-    "Solve for y: y^2 = 49 with y > 0.",
-    "What is 15% of 80?",
-    "A triangle has angles 50 and 60 degrees. What is the third angle?",
-    "What is the next prime number after 31?",
-    "Evaluate 7! / 5!.",
-    "How many diagonals does a hexagon have?",
-    "What is the square root of 196?",
-    "Convert the binary number 101101 to decimal.",
-)
 
 
 def agreement_metrics(

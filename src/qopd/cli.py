@@ -30,6 +30,8 @@ models_app = typer.Typer(
 app.add_typer(models_app, name="models")
 teacher_app = typer.Typer(help="Teacher scoring backends.", no_args_is_help=True)
 app.add_typer(teacher_app, name="teacher")
+rollout_app = typer.Typer(help="Student rollout engine.", no_args_is_help=True)
+app.add_typer(rollout_app, name="rollout")
 
 
 def _print_version(value: bool) -> None:
@@ -240,6 +242,25 @@ def teacher_agree(
     for k, v in summary.items():
         console.print(f"{k:26s} {v}", markup=False)
     if not summary["pass"]:
+        raise typer.Exit(1)
+
+
+@rollout_app.command("bench")
+def rollout_bench(
+    model: Annotated[str, typer.Option(help="Student id.")] = "S2",
+    prompts: Annotated[int, typer.Option(help="Number of prompts.")] = 8,
+    n: Annotated[int, typer.Option(help="Samples per prompt.")] = 2,
+    max_tokens: Annotated[int | None, typer.Option(help="Default: configs/train/opd.yaml.")] = None,
+    seed: Annotated[int, typer.Option()] = 0,
+    kv_cache_gb: Annotated[float, typer.Option(help="vLLM KV cache size (GB).")] = 6.0,
+) -> None:
+    """Rollout throughput and memory at training settings (PLAN 1.4)."""
+    from qopd.rollout.bench import run_bench  # noqa: PLC0415
+
+    summary = run_bench(model, prompts, n, max_tokens, seed, kv_cache_gb)
+    for k, v in summary.items():
+        console.print(f"{k:30s} {v}", markup=False)
+    if not summary["valid"]:
         raise typer.Exit(1)
 
 

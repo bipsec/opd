@@ -14,8 +14,6 @@ fit in free memory). Prefix caching is off so every position's logits are comput
 
 from __future__ import annotations
 
-import gc
-import os
 from collections.abc import Sequence
 from typing import Any
 
@@ -23,7 +21,6 @@ from qopd.prompts.templates import check_teacher_input
 from qopd.teacher.base import TeacherScorer, check_scores
 from qopd.types import Rollout, TeacherScores
 from qopd.utils.logging import get_logger
-from qopd.utils.memory import track_memory
 
 log = get_logger("teacher.vllm")
 
@@ -92,43 +89,28 @@ class VLLMTeacher(TeacherScorer):
     def start(self) -> None:
         if self.llm is not None:
             return
-        # spawn, not fork: the parent may already hold a CUDA context (e.g. an HF model).
-        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
-        from vllm import LLM  # noqa: PLC0415
+        from qopd.models.loading import build_llm  # noqa: PLC0415
 
-        with track_memory(f"load vLLM teacher {self.model_path}", log):
-            self.llm = LLM(
-                model=self.model_path,
-                revision=self.revision,
-                dtype=self.dtype,
-                seed=self.seed,
-                max_model_len=self.max_model_len,
-                max_logprobs=self.max_logprobs,
-                logprobs_mode="raw_logprobs",
-                kv_cache_memory_bytes=int(self.kv_cache_gb * 1024**3),
-                gpu_memory_utilization=self.gpu_memory_utilization,
-                enable_prefix_caching=False,
-                enforce_eager=self.enforce_eager,
-                quantization=self.quantization,
-                generation_config="vllm",  # never inherit the model's sampling defaults
-            )
+        self.llm = build_llm(
+            self.model_path,
+            revision=self.revision,
+            kv_cache_gb=self.kv_cache_gb,
+            gpu_memory_utilization=self.gpu_memory_utilization,
+            max_model_len=self.max_model_len,
+            max_logprobs=self.max_logprobs,
+            dtype=self.dtype,
+            seed=self.seed,
+            enforce_eager=self.enforce_eager,
+            quantization=self.quantization,
+        )
 
     def stop(self) -> None:
         if self.llm is None:
             return
-        with track_memory(f"unload vLLM teacher {self.model_path}", log):
-            engine = getattr(self.llm, "llm_engine", None)
-            shutdown = getattr(engine, "shutdown", None)
-            if callable(shutdown):
-                shutdown()
-            self.llm = None
-            gc.collect()
-            try:
-                import torch  # noqa: PLC0415
+        from qopd.models.loading import shutdown_llm  # noqa: PLC0415
 
-                torch.cuda.empty_cache()
-            except ImportError:
-                pass
+        llm, self.llm = self.llm, None
+        shutdown_llm(llm, f"vLLM teacher {self.model_path}")
 
     def score(self, rollouts: Sequence[Rollout], top_k: int) -> list[TeacherScores]:
         if self.llm is None:
