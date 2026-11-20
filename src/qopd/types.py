@@ -70,6 +70,28 @@ class Rollout:
     def truncated(self) -> bool:
         return self.finish_reason == FinishReason.LENGTH
 
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-safe dict; ids stay ints, so a JSONL round trip is exact."""
+        return {
+            "problem_id": self.problem_id,
+            "sample_idx": self.sample_idx,
+            "finish_reason": self.finish_reason.value,
+            "prompt_ids": list(self.prompt_ids),
+            "response_ids": list(self.response_ids),
+            "sampled_logprobs": list(self.sampled_logprobs),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Rollout:
+        return cls(
+            prompt_ids=[int(i) for i in d["prompt_ids"]],
+            response_ids=[int(i) for i in d["response_ids"]],
+            sampled_logprobs=[float(x) for x in d["sampled_logprobs"]],
+            finish_reason=FinishReason(d.get("finish_reason", "stop")),
+            problem_id=d.get("problem_id", ""),
+            sample_idx=int(d.get("sample_idx", 0)),
+        )
+
 
 @dataclass
 class TeacherScores:
