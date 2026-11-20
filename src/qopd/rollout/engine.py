@@ -84,6 +84,7 @@ class RolloutEngine:
         max_model_len: int = 5120,
         seed: int = 0,
         enforce_eager: bool = False,
+        enable_prefix_caching: bool = False,
     ) -> None:
         self.model_path = model_path
         self.revision = revision
@@ -92,6 +93,7 @@ class RolloutEngine:
         self.max_model_len = max_model_len
         self.seed = seed
         self.enforce_eager = enforce_eager
+        self.enable_prefix_caching = enable_prefix_caching  # eval: repeated prompts
         self.stop_ids: list[int] = []
         self.load_seconds = float("nan")
         self._llm: Any = None
@@ -116,6 +118,7 @@ class RolloutEngine:
             max_model_len=self.max_model_len,
             seed=self.seed,
             enforce_eager=self.enforce_eager,
+            enable_prefix_caching=self.enable_prefix_caching,
         )
         self.load_seconds = time.perf_counter() - t0
 
@@ -143,8 +146,12 @@ class RolloutEngine:
         n: int = 1,
         problem_ids: list[str] | None = None,
         seed: int | None = None,
+        seeds: list[int] | None = None,
     ) -> tuple[list[Rollout], GenerationStats]:
-        """Sample ``n`` responses per prompt. With ``seed``, request i uses ``seed + i``."""
+        """Sample ``n`` responses per prompt.
+
+        Request i uses ``seeds[i]`` if given, else ``seed + i`` (or ``sampling.seed + i``).
+        """
         if self._llm is None:
             raise RuntimeError("call start() first")
         from vllm.inputs import TokensPrompt  # noqa: PLC0415
@@ -156,13 +163,13 @@ class RolloutEngine:
             raise ValueError(
                 f"prompt + max_tokens = {longest} > max_model_len {self.max_model_len}"
             )
+        if seeds is not None and len(seeds) != len(prompt_ids):
+            raise ValueError("seeds and prompt_ids differ in length")
         base_seed = seed if seed is not None else sampling.seed
-        params = [
-            sampling_params(
-                sampling, n, self.stop_ids, None if base_seed is None else base_seed + i
-            )
-            for i in range(len(prompt_ids))
+        per_request = seeds or [
+            None if base_seed is None else base_seed + i for i in range(len(prompt_ids))
         ]
+        params = [sampling_params(sampling, n, self.stop_ids, s) for s in per_request]
         prompts = [TokensPrompt(prompt_token_ids=list(p)) for p in prompt_ids]
         t0 = time.perf_counter()
         with PeakMemory() as pm:

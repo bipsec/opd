@@ -21,7 +21,7 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
-console = Console()
+console = Console(width=160)  # wide enough for tables in non-TTY logs
 config_app = typer.Typer(help="Inspect and validate configs (configs/).", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 models_app = typer.Typer(
@@ -281,6 +281,68 @@ def data_pool(
     for st in stats["stages"]:
         console.print(f"{st['stage']:12s} in={st['in']:6d} kept={st['kept']:6d}", markup=False)
     console.print(f"pool: {stats['pool']['n']} problems -> {stats['pool']['file']}", markup=False)
+
+
+@app.command("eval")
+def eval_cmd(
+    model: Annotated[str, typer.Option(help="Registry id (S1, S2, T16, ...) or checkpoint path.")],
+    suites: Annotated[str, typer.Option(help="Comma-separated suites, e.g. math500,gsm8k.")],
+    samples: Annotated[
+        int | None, typer.Option(help="Samples per problem (default: config).")
+    ] = None,
+    limit: Annotated[int | None, typer.Option(help="Only the first N problems per suite.")] = None,
+    max_tokens: Annotated[
+        int | None, typer.Option(help="Override max tokens (default 16384).")
+    ] = None,
+    seed: Annotated[int, typer.Option()] = 0,
+    kv_cache_gb: Annotated[float, typer.Option(help="vLLM KV cache size (GB).")] = 8.0,
+    run_id: Annotated[str | None, typer.Option(help="Run id under runs/eval/.")] = None,
+    config: Annotated[Path, typer.Option(help="EvalCfg YAML.")] = Path("configs/eval/default.yaml"),
+) -> None:
+    """Generate, verify and score pass@1 (PLAN 3.2); resumable; writes runs/eval/<run_id>/."""
+    from qopd.config import EvalCfg, load  # noqa: PLC0415
+    from qopd.eval.runner import evaluate  # noqa: PLC0415
+
+    overrides = [f"sampling.max_tokens={max_tokens}"] if max_tokens else []
+    cfg = load(config, overrides, cls=EvalCfg)
+    names = [x.strip() for x in suites.split(",") if x.strip()]
+    summary = evaluate(
+        model,
+        names,
+        cfg,
+        n_samples=samples,
+        limit=limit,
+        seed=seed,
+        kv_cache_gb=kv_cache_gb,
+        run_id=run_id,
+    )
+    table = Table(
+        "suite",
+        "problems",
+        "samples",
+        "pass@1",
+        "± se",
+        "mean tok",
+        "trunc",
+        "no-ans",
+        "gen s",
+        "done",
+    )
+    for name, r in summary["suites"].items():
+        table.add_row(
+            name,
+            str(r["n_problems"]),
+            str(r["n_samples_per_problem"]),
+            f"{r['pass_at_1']:.4f}",
+            f"{r['stderr_over_problems']:.4f}",
+            f"{r['mean_response_tokens']:.0f}",
+            f"{r['truncation_rate']:.3f}",
+            f"{r['no_answer_rate']:.3f}",
+            f"{r['gen_seconds']:.0f}",
+            str(r["complete"]),
+        )
+    console.print(table)
+    console.print(f"run dir: {summary['run_dir']}", markup=False)
 
 
 @data_app.command("evals")
