@@ -16,9 +16,8 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
-import yaml
+from qopd.config import ClusterCfg, load
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CLUSTER_FILE = PROJECT_ROOT / "configs" / "cluster.yaml"
@@ -38,9 +37,10 @@ class Node:
 
 
 def load_nodes(path: Path = DEFAULT_CLUSTER_FILE) -> tuple[dict[str, Node], Path]:
-    raw: dict[str, Any] = yaml.safe_load(path.read_text())
-    nodes = {n["name"]: Node(**n) for n in raw["nodes"]}
-    env_file = Path(raw.get("env_file", ".env"))
+    """Read ``configs/cluster.yaml`` (validated by :class:`qopd.config.ClusterCfg`)."""
+    cfg = load(path, cls=ClusterCfg)
+    nodes = {n.name: Node(**n.model_dump()) for n in cfg.nodes}
+    env_file = Path(cfg.env_file)
     if not env_file.is_absolute():
         env_file = PROJECT_ROOT / env_file
     return nodes, env_file

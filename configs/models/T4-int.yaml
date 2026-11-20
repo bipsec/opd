@@ -1,0 +1,10 @@
+# Teacher rung T4-int: INT4 AWQ W4A16 g128 (built in Phase 4)
+id: T4-int
+source: models/quant/T4-int
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 4
+base: T16
+quant_format: awq_w4a16_g128

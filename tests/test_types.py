@@ -28,7 +28,7 @@ def test_check_scores():
 
 def test_registry():
     assert resolve("S2").source == "Qwen/Qwen3-0.6B"
-    assert resolve("T4-int").base is ModelId.T16
+    assert resolve("T4-int").base == ModelId.T16
     assert resolve(ModelId.T2).backend is Backend.GGUF
     with pytest.raises(KeyError):
         resolve("T5")

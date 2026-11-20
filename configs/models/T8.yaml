@@ -1,0 +1,10 @@
+# Teacher rung T8: FP8 W8A8 (built in Phase 4)
+id: T8
+source: models/quant/T8
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 8
+base: T16
+quant_format: fp8_w8a8

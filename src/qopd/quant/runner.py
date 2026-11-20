@@ -18,7 +18,7 @@ RECIPES: dict[str, type[Recipe]] = {
     "fp8_w8a8": FP8Recipe,
     "nvfp4": NVFP4Recipe,
     "awq_w4a16_g128": AWQInt4Recipe,
-    "gptq_w3_g128": GPTQ3Recipe,
+    "gptq_w3a16_g128": GPTQ3Recipe,
     "gguf_q2_k": GGUFQ2KRecipe,
 }
 

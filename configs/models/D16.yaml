@@ -1,0 +1,10 @@
+# E4 equal-memory teacher D16: Qwen3-8B, BF16
+id: D16
+source: Qwen/Qwen3-8B
+source_type: hf
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 16
+base: null
+quant_format: null

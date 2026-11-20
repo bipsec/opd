@@ -1,0 +1,10 @@
+# Teacher rung T2: 2-bit GGUF Q2_K, optional (built in Phase 4)
+id: T2
+source: models/quant/T2
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: gguf
+role: teacher
+bits: 2
+base: T16
+quant_format: gguf_q2_k

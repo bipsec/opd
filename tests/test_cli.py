@@ -31,3 +31,15 @@ def test_status_empty(tmp_path, monkeypatch):
     res = runner.invoke(app, ["status"])
     assert res.exit_code == 0
     assert "no runs" in res.output
+
+
+def test_config_show_override():
+    res = runner.invoke(app, ["config", "show", "configs/train/opd.yaml", "rounds=5"])
+    assert res.exit_code == 0, res.output
+    assert "rounds: 5" in res.output
+
+
+def test_config_check():
+    res = runner.invoke(app, ["config", "check"])
+    assert res.exit_code == 0, res.output
+    assert "FAIL" not in res.output

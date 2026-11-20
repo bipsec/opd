@@ -1,0 +1,10 @@
+# Student S2: Qwen3-0.6B (post-trained vs -Base decided at the 1.4 checkpoint)
+id: S2
+source: Qwen/Qwen3-0.6B
+source_type: hf
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: student
+bits: 16
+base: null
+quant_format: null

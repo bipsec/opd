@@ -1,0 +1,22 @@
+# OPD defaults (PLAN 0.3). Everything the grid uses is frozen into configs/frozen.yaml in 6.5.
+prompts_per_round: 64
+rollouts_per_prompt: 4
+rounds: 100
+optimizer_steps_per_round: 1
+teacher_top_k: 20
+checkpoint_every: 20
+lr: null                  # set by the 6.5 sweep (5e-7, 1e-6, 2e-6), then frozen
+optimizer: null           # TBD (experiment-plan doc)
+mode: null                # co_resident | phase_alternating, chosen at the 6.4 gate
+weight_sync: reload_from_checkpoint
+loss:
+  clip_tau: null          # E3 ablation uses 2 and 5
+  top_k_kl: false
+  hybrid_weight: 0.0
+rollout:
+  temperature: 1.0
+  top_p: 1.0              # unmodified distribution, so sampled log-probs are on-policy
+  top_k: -1
+  max_tokens: 4096
+  enable_thinking: true
+  seed: null

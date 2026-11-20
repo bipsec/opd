@@ -1,0 +1,10 @@
+# Data pipeline (PLAN 2.1–2.4).
+seed: 0                   # fixed split seed (value chosen in 0.3; confirm at checkpoint)
+train_source: null        # DeepScaleR-Preview or NuminaMath; decided in 2.1, confirmed at 2.4
+n_train: 16000
+n_coldstart: 5000         # subset of train
+n_calibration: 512        # disjoint from train
+n_probe: 500              # disjoint from train (E1)
+contamination_ngram: 13
+near_dup_threshold: null  # TBD (step 2.1)
+data_dir: data

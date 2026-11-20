@@ -1,0 +1,12 @@
+# 3-bit GPTQ, group 128, via GPTQModel (rung T3). PLAN 4.2.
+format: gptq_w3a16_g128
+scheme: W3A16
+tool: gptqmodel
+weight_bits: 3
+group_size: 128
+calibration:
+  split: calibration
+  n_samples: 512
+  max_seq_len: null     # TBD (experiment-plan doc)
+optional: false
+params: {}

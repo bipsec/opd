@@ -9,7 +9,7 @@ from qopd.quant.recipes import RecipeResult
 
 
 class GPTQ3Recipe:
-    format = "gptq_w3_g128"
+    format = "gptq_w3a16_g128"
     tool = "gptqmodel"
 
     def build(self, src: str, calibration: Path, out_dir: Path, **kwargs: Any) -> RecipeResult:

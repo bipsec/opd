@@ -1,0 +1,12 @@
+# FP8 W8A8 via llm-compressor (rungs T8, D8). PLAN 4.2.
+format: fp8_w8a8
+scheme: W8A8-FP8
+tool: llmcompressor
+weight_bits: 8
+group_size: null        # per-channel / format-defined
+calibration:
+  split: calibration
+  n_samples: 512
+  max_seq_len: null     # TBD (experiment-plan doc)
+optional: false
+params: {}

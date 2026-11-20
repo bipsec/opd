@@ -2,13 +2,14 @@
 .env
 .env.*
 
-# experiment outputs and large artifacts
-runs/
-models/
-checkpoints/
-data/raw/
-data/cache/
-wandb/
+# experiment outputs and large artifacts (anchored to the repo root: src/qopd/models/ and
+# configs/models/ are source code and must stay tracked)
+/runs/
+/models/
+/checkpoints/
+/data/raw/
+/data/cache/
+/wandb/
 
 # python
 __pycache__/

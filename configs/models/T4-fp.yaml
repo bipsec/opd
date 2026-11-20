@@ -1,0 +1,10 @@
+# Teacher rung T4-fp: NVFP4 (built in Phase 4)
+id: T4-fp
+source: models/quant/T4-fp
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 4
+base: T16
+quant_format: nvfp4

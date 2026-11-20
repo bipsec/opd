@@ -1,0 +1,12 @@
+# 2-bit GGUF Q2_K via llama.cpp (rung T2, optional). PLAN 4.2.
+format: gguf_q2_k
+scheme: Q2_K
+tool: llama.cpp
+weight_bits: 2          # nominal; Q2_K mixes block types (effective bits/weight is higher)
+group_size: null        # defined by the Q2_K format
+calibration:
+  split: calibration
+  n_samples: 512
+  max_seq_len: null     # TBD; whether an importance matrix is used is decided in 4.2
+optional: true
+params: {}

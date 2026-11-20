@@ -1,0 +1,14 @@
+# E0 pilot (PLAN 6.4): S2 with T16 for 20 rounds to measure real timings and memory.
+defaults:
+  data: data/default.yaml
+  opd: train/opd.yaml
+  eval: eval/default.yaml
+name: e0_pilot
+student: S2
+teacher: T16
+seeds: [0]
+node: local
+opd:
+  rounds: 20
+amendments: []
+notes: ""

@@ -1,0 +1,10 @@
+# Teacher T16: Qwen3-30B-A3B, BF16, thinking mode
+id: T16
+source: Qwen/Qwen3-30B-A3B
+source_type: hf
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 16
+base: null
+quant_format: null

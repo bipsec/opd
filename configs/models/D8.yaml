@@ -1,0 +1,10 @@
+# E4 rung D8: Qwen3-8B FP8, same recipe as T8 (Phase 9.2)
+id: D8
+source: models/quant/D8
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 8
+base: D16
+quant_format: fp8_w8a8

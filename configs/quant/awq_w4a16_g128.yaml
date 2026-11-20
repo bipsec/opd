@@ -1,0 +1,12 @@
+# INT4 AWQ W4A16, group 128, via llm-compressor (rungs T4-int, D4). PLAN 4.2.
+format: awq_w4a16_g128
+scheme: W4A16
+tool: llmcompressor
+weight_bits: 4
+group_size: 128
+calibration:
+  split: calibration
+  n_samples: 512
+  max_seq_len: null     # TBD (experiment-plan doc)
+optional: false
+params: {}

@@ -1,0 +1,10 @@
+# E4 rung D4: Qwen3-8B 4-bit, same recipe as T4-int (Phase 9.2)
+id: D4
+source: models/quant/D4
+source_type: local
+revision: null          # pinned when downloaded (step 1.1 / 4.1)
+backend: vllm
+role: teacher
+bits: 4
+base: D16
+quant_format: awq_w4a16_g128

@@ -1,0 +1,12 @@
+# NVFP4 via ModelOpt or llm-compressor (rung T4-fp). PLAN 4.2. Tool chosen in step 4.2.
+format: nvfp4
+scheme: NVFP4
+tool: null              # ModelOpt or llm-compressor, decided in step 4.2
+weight_bits: 4
+group_size: null        # block size is defined by the NVFP4 format
+calibration:
+  split: calibration
+  n_samples: 512
+  max_seq_len: null     # TBD (experiment-plan doc)
+optional: false
+params: {}

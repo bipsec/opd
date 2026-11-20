@@ -1,41 +1,30 @@
 """Benchmark suite definitions (PLAN 2.2, 3.2).
 
-Samples per problem from PLAN 3.2. Source datasets are pinned in step 2.2; a suite
-that cannot be found under its expected name stops the step (no substitution).
+Suites and samples per problem live in ``configs/eval/default.yaml`` (:class:`EvalCfg`).
+Source datasets are pinned in step 2.2; a suite that cannot be found under its expected
+name stops the step (no substitution).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pathlib import Path
 
-from qopd.types import ProblemKind
+from qopd.config import CONFIG_ROOT, EvalCfg, SuiteCfg, load
 
-
-@dataclass(frozen=True)
-class Suite:
-    name: str
-    n_samples: int
-    kind: ProblemKind = ProblemKind.MATH
-    gated: bool = False  # needs the user's HF access
+DEFAULT_EVAL = CONFIG_ROOT / "eval" / "default.yaml"
 
 
-SUITES: dict[str, Suite] = {
-    s.name: s
-    for s in (
-        Suite("gsm8k", 1),
-        Suite("math500", 4),
-        Suite("amc23", 8),
-        Suite("aime24", 16),
-        Suite("aime25", 16),
-        Suite("aime26", 16),
-        Suite("hmmt_feb26", 16),
-        Suite("gpqa_diamond", 4, ProblemKind.MULTIPLE_CHOICE, gated=True),
-    )
-}
+def load_suites(path: Path = DEFAULT_EVAL) -> dict[str, SuiteCfg]:
+    return load(path, cls=EvalCfg).suites
 
 
-def get_suite(name: str) -> Suite:
+def get_suite(name: str, cfg: EvalCfg | None = None) -> SuiteCfg:
+    suites = cfg.suites if cfg is not None else load_suites()
     try:
-        return SUITES[name]
+        return suites[name]
     except KeyError as e:
-        raise KeyError(f"unknown suite {name!r}; known: {sorted(SUITES)}") from e
+        raise KeyError(f"unknown suite {name!r}; known: {sorted(suites)}") from e
+
+
+def enabled_suites(cfg: EvalCfg) -> list[str]:
+    return [name for name, s in cfg.suites.items() if s.enabled]

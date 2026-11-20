@@ -1,0 +1,11 @@
+# Cold-start SFT and off-policy SFT baseline (PLAN 5.2, 8.2).
+lr: 1.0e-5
+epochs: 1
+optimizer: adamw
+dtype: bfloat16
+gradient_checkpointing: true
+response_only_loss: true
+batch_size: null          # TBD (experiment-plan doc / step 5.2)
+max_seq_len: null         # TBD
+warmup_ratio: null        # TBD
+weight_decay: null        # TBD

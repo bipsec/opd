@@ -22,6 +22,8 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+config_app = typer.Typer(help="Inspect and validate configs (configs/).", no_args_is_help=True)
+app.add_typer(config_app, name="config")
 
 
 def _print_version(value: bool) -> None:
@@ -110,6 +112,39 @@ def peer(
             "yes" if st.free else "no",
         )
     console.print(table)
+
+
+@config_app.command("show")
+def config_show(
+    path: Annotated[Path, typer.Argument(help="YAML file under configs/.")],
+    overrides: Annotated[list[str] | None, typer.Argument(help="dotted.key=value ...")] = None,
+) -> None:
+    """Print the fully resolved config (defaults composed, overrides applied, validated)."""
+    import yaml  # noqa: PLC0415
+
+    from qopd.config import load, to_dict  # noqa: PLC0415
+
+    cfg = load(path, overrides or [])
+    console.print(f"# {type(cfg).__name__} from {path}", markup=False)
+    console.print(yaml.safe_dump(to_dict(cfg), sort_keys=False), markup=False, highlight=False)
+
+
+@config_app.command("check")
+def config_check() -> None:
+    """Validate every YAML file under configs/."""
+    from qopd.config import CONFIG_ROOT, all_config_files, load  # noqa: PLC0415
+
+    failed = 0
+    for path in all_config_files():
+        rel = path.relative_to(CONFIG_ROOT)
+        try:
+            cfg = load(path)
+            console.print(f"ok    {rel}  ({type(cfg).__name__})", markup=False)
+        except Exception as e:
+            failed += 1
+            console.print(f"FAIL  {rel}: {e}", markup=False)
+    if failed:
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
