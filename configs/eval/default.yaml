@@ -1,17 +1,17 @@
-# Evaluation sampling and suites (PLAN 0.3, 2.2, 3.2). Sources are pinned in step 2.2.
+# Evaluation sampling and suites (PLAN 0.3, 2.2, 3.2). Commits pinned in qopd.data.evalsets.
 sampling:
   temperature: 0.6
   top_p: 0.95
-  top_k: -1               # not specified in PLAN.md; confirm at checkpoint
+  top_k: -1               # PLAN/doc silent; "off" accepted at the 0.3 checkpoint
   max_tokens: 16384       # "max 16k tokens"
   enable_thinking: true
   seed: null
 suites:
-  gsm8k:        {n_samples: 1,  kind: math, gated: false, enabled: true, source: null}
-  math500:      {n_samples: 4,  kind: math, gated: false, enabled: true, source: null}
-  amc23:        {n_samples: 8,  kind: math, gated: false, enabled: true, source: null}
-  aime24:       {n_samples: 16, kind: math, gated: false, enabled: true, source: null}
-  aime25:       {n_samples: 16, kind: math, gated: false, enabled: true, source: null}
-  aime26:       {n_samples: 16, kind: math, gated: false, enabled: true, source: null}
-  hmmt_feb26:   {n_samples: 16, kind: math, gated: false, enabled: true, source: null}
-  gpqa_diamond: {n_samples: 4,  kind: mc,   gated: true,  enabled: true, source: null}
+  gsm8k:        {n_samples: 1,  kind: math, gated: false, enabled: true, source: openai/gsm8k}
+  math500:      {n_samples: 4,  kind: math, gated: false, enabled: true, source: HuggingFaceH4/MATH-500}
+  amc23:        {n_samples: 8,  kind: math, gated: false, enabled: true, source: math-ai/amc23}
+  aime24:       {n_samples: 16, kind: math, gated: false, enabled: true, source: HuggingFaceH4/aime_2024}
+  aime25:       {n_samples: 16, kind: math, gated: false, enabled: true, source: MathArena/aime_2025}
+  aime26:       {n_samples: 16, kind: math, gated: false, enabled: true, source: MathArena/aime_2026}
+  hmmt_feb26:   {n_samples: 16, kind: math, gated: false, enabled: true, source: MathArena/hmmt_feb_2026}
+  gpqa_diamond: {n_samples: 4,  kind: mc,   gated: true,  enabled: true, source: Idavidrein/gpqa}

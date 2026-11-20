@@ -3,7 +3,7 @@
 import pytest
 
 from qopd.data import filters
-from qopd.data.pool import write_report
+from qopd.data.report import write_report
 from qopd.data.sources import (
     SOURCES,
     DatasetNotFoundError,
@@ -146,4 +146,4 @@ def test_report_renders_from_stats(tmp_path):
     text = out.read_text()
     assert "| normalize | 3 | 2 | empty_answer: 1 |" in text
     assert "**2** problems" in text
-    assert "TBD (step 2.2)" in text
+    assert "## Evaluation suites (step 2.2)\n\nTBD (not built yet)." in text

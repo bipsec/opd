@@ -76,7 +76,13 @@ def download(spec: SourceSpec) -> Path:
     return Path(path)
 
 
-def load_rows(spec: SourceSpec, path: Path) -> list[dict[str, Any]]:
+def load_rows(path: Path) -> list[dict[str, Any]]:
+    """Read records from .json / .jsonl / .parquet / .csv."""
+    if path.suffix == ".csv":
+        import csv  # noqa: PLC0415
+
+        with path.open(newline="", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
     if path.suffix == ".json":
         rows = json.loads(path.read_text())
     elif path.suffix == ".jsonl":
@@ -113,7 +119,7 @@ def fetch(name: str) -> tuple[list[Problem], dict[str, Any]]:
     """Download + convert a source; returns problems and a provenance record."""
     spec = get_source(name)
     path = download(spec)
-    rows = load_rows(spec, path)
+    rows = load_rows(path)
     info = {
         "name": spec.name,
         "hf_repo": spec.hf_repo,

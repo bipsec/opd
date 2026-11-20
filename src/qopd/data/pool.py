@@ -19,7 +19,6 @@ from qopd.utils import io
 from qopd.utils.logging import get_logger
 
 log = get_logger("data.pool")
-REPORT = PROJECT_ROOT / "reports" / "data.md"
 
 
 def data_dir(cfg: DataCfg) -> Path:
@@ -76,6 +75,8 @@ def build_pool(cfg: DataCfg) -> dict[str, Any]:
         "seconds": round(time.perf_counter() - t0, 1),
     }
     io.write_json(out / "pool_stats.json", stats)
+    from qopd.data.report import write_report  # noqa: PLC0415
+
     write_report(data_dir(cfg))
     return stats
 
@@ -87,7 +88,7 @@ def load_pool(cfg: DataCfg) -> list:
 # --- report ------------------------------------------------------------------------------
 
 
-def _pool_section(stats: dict[str, Any]) -> list[str]:
+def report_section(stats: dict[str, Any]) -> list[str]:
     src, pool = stats["source"], stats["pool"]
     lines = [
         "## Training pool (step 2.1)",
@@ -133,35 +134,3 @@ def _pool_section(stats: dict[str, Any]) -> list[str]:
         "",
     ]
     return lines
-
-
-def write_report(ddir: Path, report: Path = REPORT) -> Path:
-    """Render ``reports/data.md`` from whichever stats files exist."""
-    lines = [
-        "# Data report",
-        "",
-        "Generated from `data/**/..._stats.json` by `qopd data report`; do not edit by hand.",
-        "",
-    ]
-    pool_stats = ddir / "pool" / "pool_stats.json"
-    if pool_stats.exists():
-        lines += _pool_section(io.read_json(pool_stats))
-    else:
-        lines += ["## Training pool (step 2.1)", "", "TBD (not built yet).", ""]
-    lines += [
-        "## Evaluation suites (step 2.2)",
-        "",
-        "TBD (step 2.2).",
-        "",
-        "## Contamination filter (step 2.3)",
-        "",
-        "TBD (step 2.3).",
-        "",
-        "## Splits and manifest (step 2.4)",
-        "",
-        "TBD (step 2.4).",
-        "",
-    ]
-    report.parent.mkdir(parents=True, exist_ok=True)
-    report.write_text("\n".join(lines))
-    return report

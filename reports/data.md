@@ -1,6 +1,6 @@
 # Data report
 
-Generated from `data/**/..._stats.json` by `qopd data report`; do not edit by hand.
+Generated from `data/**/*_stats.json` by `qopd data report`; do not edit by hand.
 
 ## Training pool (step 2.1)
 
@@ -32,7 +32,18 @@ Kept answer types: integer, number, closed_form (math-verify parses the answer t
 
 ## Evaluation suites (step 2.2)
 
-TBD (step 2.2).
+Items are never filtered. `answer types` uses the same math-verify classification as the pool; `not self-verifying` counts items whose gold does not verify against `\boxed{gold}` (to be handled by the 3.1 verifier).
+
+| Suite | Status | Items | Source @ revision | License | Answer types | Not self-verifying |
+| --- | --- | ---: | --- | --- | --- | ---: |
+| gsm8k | ok | 1319 | `openai/gsm8k` @ `740312ad` | mit | integer: 1319 | 0 |
+| math500 | ok | 500 | `HuggingFaceH4/MATH-500` @ `6e4ed1a2` | not stated | closed_form: 28, integer: 338, number: 68, other:Add: 15, other:Equality: 5, other:FiniteSet: 6, other:Interval: 10, other:Mul: 5, other:MutableDenseMatrix: 7, other:Symbol: 8, other:Tuple: 6, other:Union: 3, other:cot: 1 | 0 |
+| amc23 | ok | 40 | `math-ai/amc23` @ `80815d37` | not stated | number: 40 | 0 |
+| aime24 | ok | 30 | `HuggingFaceH4/aime_2024` @ `2fe88a2f` | not stated | integer: 30 | 0 |
+| aime25 | ok | 30 | `MathArena/aime_2025` @ `c94da77e` | cc-by-nc-sa-4.0 | integer: 30 | 0 |
+| aime26 | ok | 30 | `MathArena/aime_2026` @ `d61f4868` | cc-by-nc-sa-4.0 | integer: 30 | 0 |
+| hmmt_feb26 | ok | 33 | `MathArena/hmmt_feb_2026` @ `589a53fe` | cc-by-nc-sa-4.0 | closed_form: 11, integer: 17, number: 5 | 0 |
+| gpqa_diamond | **blocked**: gated: needs the user's HF access (GatedRepoError) | TBD | `Idavidrein/gpqa` @ `83022cef` | cc-by-4.0 | — | — |
 
 ## Contamination filter (step 2.3)
 

@@ -283,11 +283,31 @@ def data_pool(
     console.print(f"pool: {stats['pool']['n']} problems -> {stats['pool']['file']}", markup=False)
 
 
+@data_app.command("evals")
+def data_evals(
+    suites: Annotated[list[str] | None, typer.Argument(help="Suites (default: all).")] = None,
+    config: Annotated[Path, typer.Option(help="DataCfg YAML.")] = Path("configs/data/default.yaml"),
+) -> None:
+    """Download and convert the evaluation suites (PLAN 2.2); refresh reports/data.md."""
+    from qopd.config import DataCfg, load  # noqa: PLC0415
+    from qopd.data.evalsets import build_eval_suites  # noqa: PLC0415
+    from qopd.data.pool import data_dir  # noqa: PLC0415
+    from qopd.data.report import write_report  # noqa: PLC0415
+
+    cfg = load(config, cls=DataCfg)
+    stats = build_eval_suites(cfg, suites)
+    write_report(data_dir(cfg))
+    for name, r in stats["suites"].items():
+        extra = r.get("reason", f"n={r.get('n')} sha256={str(r.get('sha256'))[:12]}")
+        console.print(f"{name:13s} {r['status']:8s} {extra}", markup=False)
+
+
 @data_app.command("report")
 def data_report() -> None:
     """Re-render reports/data.md from the stats files."""
     from qopd.config import CONFIG_ROOT, DataCfg, load  # noqa: PLC0415
-    from qopd.data.pool import data_dir, write_report  # noqa: PLC0415
+    from qopd.data.pool import data_dir  # noqa: PLC0415
+    from qopd.data.report import write_report  # noqa: PLC0415
 
     cfg = load(CONFIG_ROOT / "data" / "default.yaml", cls=DataCfg)
     console.print(f"wrote {write_report(data_dir(cfg))}", markup=False)
