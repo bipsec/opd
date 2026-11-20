@@ -2,7 +2,7 @@
 id: S1
 source: Qwen/Qwen3-1.7B
 source_type: hf
-revision: null          # pinned when downloaded (step 1.1 / 4.1)
+revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e          # pinned commit
 backend: vllm
 role: student
 bits: 16

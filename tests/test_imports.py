@@ -2,6 +2,7 @@
 
 import importlib
 import pkgutil
+import subprocess
 import sys
 
 import pytest
@@ -69,8 +70,11 @@ def test_imports(name):
 
 
 def test_no_heavy_imports():
-    for name in MODULES:
-        importlib.import_module(name)
-    heavy = [m for m in ("torch", "vllm", "transformers") if m in sys.modules]
-    # torch may already be imported by another test (e.g. seed); vllm/transformers never.
-    assert "vllm" not in heavy and "transformers" not in heavy, heavy
+    """Importing every module in a fresh interpreter must not pull in vllm/transformers."""
+    code = (
+        "import importlib, sys\n"
+        f"for m in {MODULES!r}: importlib.import_module(m)\n"
+        "print(','.join(m for m in ('vllm', 'transformers') if m in sys.modules))\n"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "", out.stdout

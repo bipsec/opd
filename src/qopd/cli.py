@@ -24,6 +24,10 @@ app = typer.Typer(
 console = Console()
 config_app = typer.Typer(help="Inspect and validate configs (configs/).", no_args_is_help=True)
 app.add_typer(config_app, name="config")
+models_app = typer.Typer(
+    help="Model registry, downloads and tokenizer checks.", no_args_is_help=True
+)
+app.add_typer(models_app, name="models")
 
 
 def _print_version(value: bool) -> None:
@@ -143,6 +147,77 @@ def config_check() -> None:
         except Exception as e:
             failed += 1
             console.print(f"FAIL  {rel}: {e}", markup=False)
+    if failed:
+        raise typer.Exit(1)
+
+
+@models_app.command("list")
+def models_list() -> None:
+    """Show every registry id with its source, backend, bits and pinned revision."""
+    from qopd.models.registry import load_registry  # noqa: PLC0415
+
+    table = Table("id", "role", "bits", "backend", "source", "revision")
+    for cfg in load_registry().values():
+        table.add_row(
+            cfg.id, cfg.role, f"{cfg.bits:g}", cfg.backend, cfg.source, cfg.revision or "-"
+        )
+    console.print(table)
+
+
+@models_app.command("verify")
+def models_verify(
+    ids: Annotated[list[str], typer.Argument(help="Model ids (e.g. S1 S2 T16 D16).")],
+) -> None:
+    """Check each HF repo id (at its pinned revision) or local rung directory exists."""
+    from qopd.models.registry import ModelNotFoundError, resolve, verify_exists  # noqa: PLC0415
+
+    failed = False
+    for mid in ids:
+        cfg = resolve(mid)
+        try:
+            console.print(f"ok    {mid:7s} {cfg.source} @ {verify_exists(cfg)}", markup=False)
+        except ModelNotFoundError as e:
+            failed = True
+            console.print(f"FAIL  {e}", markup=False)
+    if failed:
+        raise typer.Exit(1)
+
+
+@models_app.command("download")
+def models_download(
+    ids: Annotated[list[str], typer.Argument(help="Model ids to download.")],
+    tokenizer_only: Annotated[bool, typer.Option(help="Only tokenizer/config files.")] = False,
+    pin: Annotated[bool, typer.Option(help="Write the commit sha into configs/models.")] = True,
+) -> None:
+    """Download HF models into the cache and pin their revision (approval needed > 10 GB)."""
+    from qopd.models.loading import download  # noqa: PLC0415
+    from qopd.models.registry import pin_revision, resolve  # noqa: PLC0415
+
+    for mid in ids:
+        cfg = resolve(mid)
+        path, sha = download(cfg, tokenizer_only=tokenizer_only)
+        if pin and cfg.revision != sha:
+            pin_revision(mid, sha)
+        console.print(f"{mid}: {path} (revision {sha})", markup=False)
+
+
+@models_app.command("tokcheck")
+def models_tokcheck(
+    teacher: Annotated[str, typer.Argument(help="Teacher (or first) model id.")],
+    students: Annotated[list[str], typer.Argument(help="Student (or other) model ids.")],
+) -> None:
+    """Hard tokenizer identity check; exits 1 on any mismatch."""
+    from qopd.models.loading import load_tokenizer  # noqa: PLC0415
+    from qopd.models.registry import resolve  # noqa: PLC0415
+    from qopd.models.tokenizer_check import compare_tokenizers  # noqa: PLC0415
+
+    ref = load_tokenizer(resolve(teacher))
+    failed = False
+    for sid in students:
+        diff = compare_tokenizers(ref, load_tokenizer(resolve(sid)))
+        status = "ok  " if diff.identical else "FAIL"
+        failed |= not diff.identical
+        console.print(f"{status} {teacher} vs {sid}: {diff.summary()}", markup=False)
     if failed:
         raise typer.Exit(1)
 
