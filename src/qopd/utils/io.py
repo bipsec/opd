@@ -19,6 +19,9 @@ def atomic_write_bytes(path: str | os.PathLike[str], data: bytes) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    umask = os.umask(0)
+    os.umask(umask)
+    os.chmod(tmp, 0o666 & ~umask)  # mkstemp creates 0600; use normal file permissions
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)

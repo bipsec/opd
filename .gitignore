@@ -7,8 +7,8 @@
 /runs/
 /models/
 /checkpoints/
-/data/raw/
-/data/cache/
+/data/*
+!/data/manifest.json
 /wandb/
 
 # python

@@ -32,6 +32,10 @@ teacher_app = typer.Typer(help="Teacher scoring backends.", no_args_is_help=True
 app.add_typer(teacher_app, name="teacher")
 rollout_app = typer.Typer(help="Student rollout engine.", no_args_is_help=True)
 app.add_typer(rollout_app, name="rollout")
+data_app = typer.Typer(
+    help="Data pipeline (prompt pool, eval suites, splits).", no_args_is_help=True
+)
+app.add_typer(data_app, name="data")
 
 
 def _print_version(value: bool) -> None:
@@ -262,6 +266,31 @@ def rollout_bench(
         console.print(f"{k:30s} {v}", markup=False)
     if not summary["valid"]:
         raise typer.Exit(1)
+
+
+@data_app.command("pool")
+def data_pool(
+    config: Annotated[Path, typer.Option(help="DataCfg YAML.")] = Path("configs/data/default.yaml"),
+    overrides: Annotated[list[str] | None, typer.Argument(help="dotted.key=value ...")] = None,
+) -> None:
+    """Build the training prompt pool (PLAN 2.1) and refresh reports/data.md."""
+    from qopd.config import DataCfg, load  # noqa: PLC0415
+    from qopd.data.pool import build_pool  # noqa: PLC0415
+
+    stats = build_pool(load(config, overrides or [], cls=DataCfg))
+    for st in stats["stages"]:
+        console.print(f"{st['stage']:12s} in={st['in']:6d} kept={st['kept']:6d}", markup=False)
+    console.print(f"pool: {stats['pool']['n']} problems -> {stats['pool']['file']}", markup=False)
+
+
+@data_app.command("report")
+def data_report() -> None:
+    """Re-render reports/data.md from the stats files."""
+    from qopd.config import CONFIG_ROOT, DataCfg, load  # noqa: PLC0415
+    from qopd.data.pool import data_dir, write_report  # noqa: PLC0415
+
+    cfg = load(CONFIG_ROOT / "data" / "default.yaml", cls=DataCfg)
+    console.print(f"wrote {write_report(data_dir(cfg))}", markup=False)
 
 
 if __name__ == "__main__":

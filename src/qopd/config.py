@@ -100,12 +100,18 @@ class QuantCfg(Cfg):
 
 class DataCfg(Cfg):
     seed: int = 0
-    train_source: str | None = None  # DeepScaleR-Preview or NuminaMath; decided in 2.1/2.4
+    train_source: str = "deepscaler_preview"  # key in qopd.data.sources.SOURCES; confirm at 2.4
+    # "integer or simple closed-form answers so math-verify can check them" (doc):
+    keep_answer_types: list[Literal["integer", "number", "closed_form"]] = Field(
+        default_factory=lambda: ["integer", "number", "closed_form"]
+    )
     n_train: int = Field(16_000, gt=0)
     n_coldstart: int = Field(5_000, gt=0)  # subset of train
     n_calibration: int = Field(512, gt=0)  # disjoint from train
     n_probe: int = Field(500, gt=0)  # disjoint from train (E1)
     contamination_ngram: int = Field(13, gt=0)
+    # Identical problems whose gold answers disagree are all dropped (step 2.1 decision).
+    drop_conflicting_duplicates: bool = True
     # Doc: MinHash on word 5-grams, 128 permutations, Jaccard >= 0.8 is a duplicate.
     near_dup_ngram: int = Field(5, gt=0)
     near_dup_num_perm: int = Field(128, gt=0)

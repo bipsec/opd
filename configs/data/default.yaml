@@ -1,11 +1,16 @@
 # Data pipeline (PLAN 2.1–2.4).
 seed: 0                   # fixed split seed (value chosen in 0.3; confirm at checkpoint)
-train_source: null        # DeepScaleR-Preview or NuminaMath; decided in 2.1, confirmed at 2.4
+train_source: deepscaler_preview   # agentica-org/DeepScaleR-Preview-Dataset; confirm at 2.4
+keep_answer_types:        # math-verify parses the answer to one real number, no variables
+  - integer
+  - number                # rationals and decimals
+  - closed_form           # e.g. \sqrt{2}-1, 5\pi/6
 n_train: 16000
 n_coldstart: 5000         # subset of train
 n_calibration: 512        # disjoint from train
 n_probe: 500              # disjoint from train (E1)
 contamination_ngram: 13
+drop_conflicting_duplicates: true  # identical problems with disagreeing answers: drop all
 near_dup_ngram: 5         # doc: MinHash on word 5-grams
 near_dup_num_perm: 128    # doc: 128 permutations
 near_dup_threshold: 0.8   # doc: Jaccard >= 0.8 is a duplicate

@@ -20,6 +20,7 @@ def test_json_atomic_and_hash(tmp_path):
     assert io.read_json(p) == {"k": 1}
     assert len(io.sha256_file(p)) == 64
     assert not list(tmp_path.glob(".x.json.*"))  # no temp files left
+    assert p.stat().st_mode & 0o044  # readable by group/others (not mkstemp's 0600)
 
 
 def test_seed_reproducible():
