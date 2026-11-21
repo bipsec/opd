@@ -191,6 +191,20 @@ class OPDCfg(Cfg):
     rollout: SamplingCfg
 
 
+class GRPOCfg(Cfg):
+    """RLVR baseline (PLAN 8.2): verifier reward only, group size 4, wall-clock-matched.
+
+    Sampling, prompts per round, optimizer and schedule come from the run's ``opd`` section
+    (same student settings, nothing tuned separately)."""
+
+    group_size: int = Field(4, gt=1)  # rollouts per prompt
+    normalize_std: bool = True  # A = (R - mean_g) / (std_g + eps)
+    adv_eps: float = Field(1e-6, gt=0)
+    kl_coef: float = Field(0.0, ge=0)  # "verifier reward only": no KL-to-reference term
+    wall_clock_hours: float | None = Field(None, gt=0)  # set from the matched OPD run
+    max_rounds: int | None = Field(None, gt=0)  # cap; default = opd.rounds
+
+
 class SFTCfg(Cfg):
     lr: float = Field(1e-5, gt=0)
     epochs: float = Field(1, gt=0)
@@ -211,6 +225,9 @@ class SFTCfg(Cfg):
     packing: bool = False
     # Operational (not scientific) settings:
     traces: str = "data/coldstart/traces.jsonl"  # prompt_ids + response_ids per line (step 5.1)
+    # Off-policy SFT baseline (8.2): stop once this many response tokens were trained on,
+    # i.e. the matched OPD run's total (compute matching; None = full epochs).
+    max_response_tokens: int | None = Field(None, gt=0)
     checkpoint_every_steps: int = Field(50, gt=0)  # resumable state (model + optimizer + data)
     seed: int = 0  # data order
 
@@ -265,6 +282,7 @@ class ExperimentCfg(Cfg):
     data: DataCfg | None = None
     opd: OPDCfg | None = None
     sft: SFTCfg | None = None
+    grpo: GRPOCfg | None = None
     eval: EvalCfg | None = None
     # Resource-driven deviations from the design (CLAUDE.md); shown in every report.
     amendments: list[str] = Field(default_factory=list)

@@ -175,7 +175,9 @@ def train_sft(
 
     run.save_state(status="running", total_steps=total_steps, n_examples=len(examples))
     taken = 0
-    while step < total_steps:
+    trained_tokens = int(run.load_state().get("trained_response_tokens", 0))
+    budget = cfg.max_response_tokens
+    while step < total_steps and (budget is None or trained_tokens < budget):
         if stop_after_steps is not None and taken >= stop_after_steps:
             save_state()
             return run.load_state()
@@ -198,6 +200,8 @@ def train_sft(
         sched.step()
         step += 1
         taken += 1
+        trained_tokens += n_tok
+        run.save_state(trained_response_tokens=trained_tokens)
         mem = snapshot()
         run.log_metrics(
             {
@@ -212,11 +216,20 @@ def train_sft(
                 "torch_allocated_gb": mem.torch_allocated_gb,
             }
         )
-        if step % cfg.checkpoint_every_steps == 0 or step == total_steps:
+        if (
+            step % cfg.checkpoint_every_steps == 0
+            or step == total_steps
+            or (budget is not None and trained_tokens >= budget)
+        ):
             save_state()
     if save_final is not None:
         save_final(model, run.checkpoints / "final")
-    run.save_state(status="trained", step=step, total_steps=total_steps)
+    run.save_state(
+        status="trained",
+        step=step,
+        total_steps=total_steps,
+        stopped_by="token_budget" if budget is not None and trained_tokens >= budget else "epochs",
+    )
     return run.load_state()
 
 

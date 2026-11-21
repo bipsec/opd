@@ -141,6 +141,14 @@ def test_resume_matches_uninterrupted(tmp_path):
     assert [r["step"] for r in io.read_jsonl(split.metrics)] == list(range(1, 10))
 
 
+def test_token_budget_compute_matching(tmp_path):
+    run = create_run_dir("sft", "budget", {"x": 1}, root=tmp_path)
+    ex = examples()  # 6 response tokens each, 4 per step -> 24 tokens per step
+    st = train_sft(cfg(max_response_tokens=50), run, tiny_model(), 0, ex, device="cpu")
+    assert st["stopped_by"] == "token_budget" and st["step"] == 3  # 24, 48, 72 >= 50
+    assert st["trained_response_tokens"] == 72
+
+
 @pytest.mark.gpu
 @pytest.mark.slow
 def test_s2_sft_smoke_gpu(tmp_path):

@@ -129,10 +129,21 @@ and reproduces the uninterrupted run exactly (tested).
 \input{tables/hparams}
 
 \subsection{Baselines}
-\emph{Cold start only} (evaluation of the starting checkpoints); \emph{off-policy SFT} on BF16
-teacher traces, compute-matched to an OPD run; and \emph{RLVR} with GRPO \citep{shao2024grpo}
-(verifier reward only, group size 4, wall-clock-matched). The RLVR baseline answers the practical
-question of whether a cheap teacher is still better than no teacher.
+\paragraph{Cold start only.} The starting checkpoints, evaluated with the same harness.
+
+\paragraph{Off-policy SFT.} Supervised fine-tuning on verified BF16-teacher traces for the
+training prompts, with the cold-start settings, \emph{compute-matched} to an OPD run: training
+stops once it has used as many response tokens as the matched OPD run trained on.
+
+\paragraph{RLVR.} GRPO \citep{shao2024grpo} with the verifier's 0/1 correctness as the only
+reward: each round samples \nPrompts{} prompts with a group of 4 rollouts each, sets the
+advantage of a rollout to its reward minus the group mean divided by the group standard deviation,
+and takes one step on $-\frac{1}{N}\sum_{i,t} A_i \log\piS(y_{i,t}\mid x_i,y_{i,<t})$. Samples are
+fresh and there is one step per round, so the importance ratio is 1 and clipping never binds; no
+KL term to a reference model is used. Sampling, optimizer and learning-rate schedule are those
+of OPD, and the run is \emph{wall-clock-matched}: it stops when its accumulated round time equals
+that of the matched OPD run. This baseline answers the practical question of whether a cheap
+teacher is still better than no teacher.
 
 \subsection{Statistics}\label{sec:stats}
 \paragraph{Intervals.} For each condition we report the mean over seeds with a Student-$t$ 95\%

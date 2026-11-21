@@ -492,5 +492,17 @@ def train_opd_cmd(
     console.print(f"status={st.get('status')} round={st.get('round')}", markup=False)
 
 
+@train_app.command("grpo")
+def train_grpo_cmd(
+    spec: Annotated[Path, typer.Option(help="ExperimentCfg YAML (opd section + optional grpo).")],
+    stop_after_rounds: Annotated[int | None, typer.Option(help="Pause after N rounds.")] = None,
+) -> None:
+    """RLVR baseline with GRPO (PLAN 8.2); resumable; wall-clock-matched."""
+    from qopd.train.grpo import run_grpo_spec  # noqa: PLC0415
+
+    st = run_grpo_spec(spec, stop_after_rounds)
+    console.print(f"status={st.get('status')} round={st.get('round')}", markup=False)
+
+
 if __name__ == "__main__":
     app()
