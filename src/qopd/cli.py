@@ -42,6 +42,8 @@ train_app = typer.Typer(help="Trainers (SFT now; OPD in 6.2, GRPO in 8.2).", no_
 app.add_typer(train_app, name="train")
 report_app = typer.Typer(help="Reports generated from run files.", no_args_is_help=True)
 app.add_typer(report_app, name="report")
+quant_app = typer.Typer(help="Teacher quantization ladder (Phase 4).", no_args_is_help=True)
+app.add_typer(quant_app, name="quant")
 
 
 def _print_version(value: bool) -> None:
@@ -513,6 +515,50 @@ def report_e1() -> None:
 
     path, n = run_e1_report()
     console.print(f"wrote {path} ({n} rung reports)", markup=False)
+
+
+@report_app.command("status")
+def report_status(
+    experiments: Annotated[list[str] | None, typer.Argument(help="Default: every queue.")] = None,
+) -> None:
+    """reports/status.md: progress, ETA and anomalies per experiment (PLAN 8.4)."""
+    from qopd.config import PROJECT_ROOT  # noqa: PLC0415
+    from qopd.orchestration.digest import write_digest  # noqa: PLC0415
+    from qopd.utils.run import default_runs_root  # noqa: PLC0415
+
+    out = write_digest(default_runs_root(), PROJECT_ROOT / "reports" / "status.md", experiments)
+    console.print(f"wrote {out}", markup=False)
+
+
+@teacher_app.command("bench")
+def teacher_bench(
+    model: Annotated[str, typer.Option(help="Teacher id (T16, T8, ...).")] = "T16",
+    n: Annotated[int, typer.Option(help="Sequences to score.")] = 200,
+    kv_cache_gb: Annotated[float, typer.Option()] = 16.0,
+    gpu_memory_utilization: Annotated[float, typer.Option()] = 0.75,
+) -> None:
+    """Load time, memory and scoring throughput of a teacher (PLAN 4.1 / 4.3)."""
+    from qopd.teacher.bench import run_teacher_bench  # noqa: PLC0415
+
+    for k, v in run_teacher_bench(
+        model, n, kv_cache_gb=kv_cache_gb, gpu_memory_utilization=gpu_memory_utilization
+    ).items():
+        console.print(f"{k:26s} {v}", markup=False)
+
+
+@quant_app.command("calib-traces")
+def quant_calib_traces(
+    teacher: Annotated[str, typer.Option(help="Teacher that writes the traces.")] = "T16",
+    kv_cache_gb: Annotated[float, typer.Option()] = 16.0,
+    gpu_memory_utilization: Annotated[float, typer.Option()] = 0.75,
+) -> None:
+    """Calibration texts: one teacher trace per calibration prompt, cut at 2,048 tokens (4.1)."""
+    from qopd.quant.calibration import generate_traces  # noqa: PLC0415
+
+    for k, v in generate_traces(
+        teacher, kv_cache_gb=kv_cache_gb, gpu_memory_utilization=gpu_memory_utilization
+    ).items():
+        console.print(f"{k:22s} {v}", markup=False)
 
 
 if __name__ == "__main__":
