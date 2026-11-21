@@ -134,3 +134,20 @@ def test_s2_gsm8k_smoke(tmp_path):
     r = s["suites"]["gsm8k"]
     assert r["complete"] and r["n_samples_done"] == 4
     assert 0.0 <= r["pass_at_1"] <= 1.0
+
+
+def test_sanity_report_from_files(tmp_path):
+    from qopd.eval.report import write_sanity_report
+
+    run = create_run_dir("eval", "r", {"x": 1}, root=tmp_path)
+    EvalRunner(FakeTok(), CFG, run, lambda m: FakeEngine(ANSWERS)).run({"s": SUITE}, {"s": 1})
+    partial = tmp_path / "partial"
+    partial.mkdir()
+    io.write_jsonl(partial / "samples.jsonl", io.read_jsonl(run.path / "samples.jsonl")[:4])
+    out = write_sanity_report(
+        {"A": run.path, "B": partial, "C": tmp_path / "none"}, {"s": 10}, report=tmp_path / "r.md"
+    )
+    text = out.read_text()
+    assert "| A | s |" in text and "| 10/10 |" in text
+    assert "| B | s | TBD (running) | TBD | 4/10 |" in text
+    assert "| C | s | TBD | TBD | 0/10 |" in text
