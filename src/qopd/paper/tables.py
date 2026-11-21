@@ -141,6 +141,7 @@ def tab_hardware() -> str:
 
 
 def tab_ladder() -> str:
+    rungs = _json(PROJECT_ROOT / "reports" / "results" / "rungs.json")
     rows = []
     for mid in LADDER + DENSE:
         m = load(CONFIG_ROOT / "models" / f"{mid}.yaml", cls=ModelCfg)
@@ -151,7 +152,10 @@ def tab_ladder() -> str:
         else:
             fmt, tool, group = "BF16", "--", "--"
         base = "Qwen3-30B-A3B" if mid.startswith("T") else "Qwen3-8B"
-        rows.append([tex(mid), base, tex(fmt), f"{m.bits:g}", group, tool, TBD, TBD])
+        rr = (rungs or {}).get(mid, {})
+        mem = f"{rr['memory_gb']:.1f}" if rr.get("memory_gb") is not None else TBD
+        acc = pct(rr["math500"]) if rr.get("math500") is not None else TBD
+        rows.append([tex(mid), base, tex(fmt), f"{m.bits:g}", group, tool, mem, acc])
     return table(
         "tab:ladder",
         "Teacher quantization ladder. Memory and MATH-500 accuracy are measured "

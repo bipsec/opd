@@ -561,5 +561,13 @@ def quant_calib_traces(
         console.print(f"{k:22s} {v}", markup=False)
 
 
+@report_app.command("rungs")
+def report_rungs() -> None:
+    """reports/rungs.md + reports/results/rungs.json from bench/eval/recipe files (PLAN 4.x)."""
+    from qopd.quant.report import collect, write  # noqa: PLC0415
+
+    console.print(f"wrote {write(collect())}", markup=False)
+
+
 if __name__ == "__main__":
     app()
