@@ -3,10 +3,14 @@
 E1 asks, without any training, how faithfully each quantized teacher reproduces the BF16
 teacher's per-token reward on the rollouts the student actually produces.
 
-\paragraph{Protocol.} For each cold-started student we sample a fixed pool of 2{,}000 rollouts
-from the \nProbe{} probe prompts and store the exact token ids. Every rung scores the same pool
-(top-\teacherTopK{} log-probabilities at every response position), so all differences come from
-the teacher.
+\paragraph{Protocol.} For each cold-started student we sample a fixed pool from the \nProbe{}
+probe prompts (four rollouts each, 2{,}000 in total) with the OPD rollout settings, and store the
+exact token ids. The student's log-probability and entropy at every response position are
+recomputed in one forward pass of the student, the same computation the OPD trainer uses. Every
+rung then scores the same pool (log-probability of each realized token and the
+top-\teacherTopK{} alternatives at every position), so all differences between rungs come from
+the teacher alone. Scoring is chunked and resumable, and the pools with every rung's
+log-probabilities are released.
 
 \paragraph{Metrics.} Let $r_t^{(b)}$ be the reward of Eq.~\ref{eq:reward} under rung $b$ on
 pool token $t$. Because the student term is shared, $r_t^{(b)}-r_t^{(16)}=\log\piT(y_t)-
@@ -31,7 +35,7 @@ Each metric is repeated within student-entropy buckets with fixed edges
 that H3 can be read off directly. Unit tests confirm that identical teachers give perfect scores
 and that every metric degrades monotonically as noise is added to the teacher's log-probabilities.
 
-\placeholderfig{fig:fidelity}{Teacher-signal fidelity against teacher bits for both students
+\placeholderfig{fidelity}{Teacher-signal fidelity against teacher bits for both students
 (E1).}{fidelity metrics vs.\ bits per rung, one line per student}
 
 \input{tables/fidelity}

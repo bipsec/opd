@@ -315,10 +315,32 @@ def tab_main_results() -> str:
 
 
 def tab_fidelity() -> str:
-    rows = [[tex(s), tex(t)] + [TBD] * 6 for s in STUDENTS for t in LADDER[1:]]
+    from qopd.fidelity.report import load_all  # noqa: PLC0415
+
+    res = load_all()
+    rows = []
+    for s in STUDENTS:
+        for t in LADDER[1:]:
+            d = res.get(s, {}).get(t)
+            if d is None:
+                rows.append([tex(s), tex(t)] + [TBD] * 6)
+                continue
+            inf = TBD if d.get("informativeness") is None else f"{d['informativeness']:.3f}"
+            rows.append(
+                [
+                    tex(s),
+                    tex(t),
+                    f"{d['pearson']:.3f}",
+                    f"{d['mae']:.4f}",
+                    f"{d['topk_kl']:.4f}",
+                    f"{d['top1_agreement']:.3f}",
+                    pct(d["sign_flip_rate"], 2),
+                    inf,
+                ]
+            )
     return table(
         "tab:fidelity",
-        "Teacher-signal fidelity against BF16 on the E1 rollout pools.",
+        "Teacher-signal fidelity against BF16 on the E1 rollout pools (sign flips in \\%).",
         "llrrrrrr",
         [
             "Student",
@@ -331,7 +353,7 @@ def tab_fidelity() -> str:
             "inform.",
         ],
         rows,
-        "runs/e1 (not run yet)",
+        "runs/e1/<student>/fidelity/<rung>.json",
     )
 
 

@@ -41,7 +41,7 @@ def test_refs_resolve():
     texts = list(_all_tex().values()) + [p.read_text() for p in PAPER.glob("tables/*.tex")]
     joined = "\n".join(texts)
     labels = set(re.findall(r"\\label\{([^}]+)\}", joined))
-    labels |= set(re.findall(r"\\placeholderfig\{([^}]+)\}", joined))
+    labels |= {f"fig:{n}" for n in re.findall(r"\\placeholderfig\{([^}]+)\}", joined)}
     refs = set(re.findall(r"\\ref\{([^}]+)\}", joined))
     assert refs <= labels, sorted(refs - labels)
 

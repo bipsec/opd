@@ -7,7 +7,7 @@ Official post-trained students, thinking mode, temperature 0.6, top-p 0.95, max 
 | S2 | gsm8k | 80.6 | 1.1 | 1319/1319 | 2039 | 0.5% | 0.5% | 1 h 08 min | 658 | TBD |
 | S2 | math500 | 72.4 | 2.0 | 500/500 | 5256 | 7.6% | 7.2% | 2 h 18 min | 318 | TBD |
 | S1 | gsm8k | 90.1 | 0.8 | 1319/1319 | 2324 | 0.2% | 0.2% | 1 h 36 min | 534 | TBD |
-| S1 | math500 | TBD | TBD | 0/500 | TBD | TBD | TBD | TBD | TBD | TBD |
+| S1 | math500 | 86.0 | 1.6 | 500/500 | 5452 | 7.8% | 6.6% | 2 h 48 min | 271 | TBD |
 
 Sources:
 

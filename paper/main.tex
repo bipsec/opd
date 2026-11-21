@@ -15,10 +15,11 @@
 % --- draft markers: grep for \TBD{} before submission -------------------------------
 \newcommand{\TBD}{\textcolor{red}{\textbf{TBD}}\xspace}
 \newcommand{\todo}[1]{\textcolor{blue}{[\textit{#1}]}}
-\newcommand{\placeholderfig}[3]{% {label}{caption}{what will be plotted}
+\newcommand{\placeholderfig}[3]{% {name}{caption}{what will be plotted}; label fig:name
   \begin{figure}[t]\centering
-  \fbox{\parbox{0.85\linewidth}{\centering\vspace{2.5em}\TBD: #3\vspace{2.5em}}}
-  \caption{#2}\label{#1}\end{figure}}
+  \IfFileExists{figures/#1.pdf}{\includegraphics[width=\linewidth]{figures/#1.pdf}}{%
+    \fbox{\parbox{0.85\linewidth}{\centering\vspace{2.5em}\TBD: #3\vspace{2.5em}}}}
+  \caption{#2}\label{fig:#1}\end{figure}}
 
 % --- notation -----------------------------------------------------------------------------
 \newcommand{\piT}[1][b]{\pi_T^{(#1)}}

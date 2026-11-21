@@ -40,6 +40,8 @@ queue_app = typer.Typer(help="Experiment grids and the job queue (PLAN 8.1).", n
 app.add_typer(queue_app, name="queue")
 train_app = typer.Typer(help="Trainers (SFT now; OPD in 6.2, GRPO in 8.2).", no_args_is_help=True)
 app.add_typer(train_app, name="train")
+report_app = typer.Typer(help="Reports generated from run files.", no_args_is_help=True)
+app.add_typer(report_app, name="report")
 
 
 def _print_version(value: bool) -> None:
@@ -502,6 +504,15 @@ def train_grpo_cmd(
 
     st = run_grpo_spec(spec, stop_after_rounds)
     console.print(f"status={st.get('status')} round={st.get('round')}", markup=False)
+
+
+@report_app.command("e1")
+def report_e1() -> None:
+    """Fidelity per scored rung, Figure 1 and reports/e1.md (PLAN 7.4)."""
+    from qopd.fidelity.report import run_e1_report  # noqa: PLC0415
+
+    path, n = run_e1_report()
+    console.print(f"wrote {path} ({n} rung reports)", markup=False)
 
 
 if __name__ == "__main__":
