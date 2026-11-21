@@ -436,8 +436,21 @@ def number_macros() -> dict[str, str]:
         "nRounds": str(opd.rounds),
         "rolloutMaxTok": num(opd.rollout.max_tokens),
         "teacherTopK": str(opd.teacher_top_k),
+        "entropyBuckets": _entropy_buckets(),
     }
     return m
+
+
+def _entropy_buckets() -> str:
+    from itertools import pairwise  # noqa: PLC0415
+
+    from qopd.fidelity.metrics import DEFAULT_ENTROPY_EDGES  # noqa: PLC0415
+
+    parts = [
+        f"[{lo:g},{hi:g})" if hi != float("inf") else f"[{lo:g},\\infty)"
+        for lo, hi in pairwise(DEFAULT_ENTROPY_EDGES)
+    ]
+    return "$" + ", ".join(parts) + "$"
 
 
 def write_all(out: Path = TABLES) -> list[Path]:
