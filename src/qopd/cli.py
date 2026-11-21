@@ -36,6 +36,8 @@ data_app = typer.Typer(
     help="Data pipeline (prompt pool, eval suites, splits).", no_args_is_help=True
 )
 app.add_typer(data_app, name="data")
+queue_app = typer.Typer(help="Experiment grids and the job queue (PLAN 8.1).", no_args_is_help=True)
+app.add_typer(queue_app, name="queue")
 
 
 def _print_version(value: bool) -> None:
@@ -84,21 +86,36 @@ def env(
 
 @app.command()
 def status() -> None:
-    """Queue and run status (the job queue arrives in step 8.1)."""
+    """Runs under runs/ and every planned queue (tmux state is only visible on the host)."""
+    from qopd.orchestration.queue import JobState, list_queues, load_queue  # noqa: PLC0415
+    from qopd.orchestration.queue import status as queue_status  # noqa: PLC0415
     from qopd.utils.run import default_runs_root  # noqa: PLC0415
 
     root = default_runs_root()
     runs = sorted(p.parent for p in root.glob("*/*/state.json")) if root.exists() else []
     if not runs:
-        console.print(f"no runs under {root}; no queue yet (step 8.1)")
-        return
-    table = Table("experiment", "run", "status", "done")
-    for rd in runs:
-        state = json.loads((rd / "state.json").read_text())
-        table.add_row(
-            rd.parent.name, rd.name, str(state.get("status", "?")), str((rd / "DONE").exists())
+        console.print(f"no runs under {root}", markup=False)
+    else:
+        table = Table("experiment", "run", "status", "done", "updated")
+        for rd in runs:
+            state = json.loads((rd / "state.json").read_text())
+            table.add_row(
+                rd.parent.name,
+                rd.name,
+                str(state.get("status", "?")),
+                str((rd / "DONE").exists()),
+                str(state.get("updated", "")),
+            )
+        console.print(table)
+    for exp in list_queues(root) if root.exists() else []:
+        st = queue_status(load_queue(root, exp), root)
+        eta = "unknown" if st.eta_hours is None else f"{st.eta_hours:.1f} h (estimate)"
+        counts = ", ".join(f"{s.value} {st.count(s)}" for s in JobState)
+        console.print(
+            f"queue {exp}: {counts}; remaining ≈ {eta}. Live tmux view on the host: "
+            f"python3 scripts/queue_host.py status {exp}",
+            markup=False,
         )
-    console.print(table)
 
 
 @app.command()
@@ -424,6 +441,31 @@ def data_report() -> None:
 
     cfg = load(CONFIG_ROOT / "data" / "default.yaml", cls=DataCfg)
     console.print(f"wrote {write_report(data_dir(cfg))}", markup=False)
+
+
+@queue_app.command("plan")
+def queue_plan(grid: Annotated[str, typer.Argument(help="Grid name in configs/grids/.")]) -> None:
+    """Expand a grid into per-run specs and runs/<experiment>/queue.json."""
+    from qopd.orchestration.grid import plan  # noqa: PLC0415
+
+    path, specs = plan(grid)
+    table = Table("run id", "kind", "optional", "est. h", "command")
+    for s in specs:
+        table.add_row(
+            s.run_id,
+            s.kind,
+            "yes" if s.optional else "",
+            "" if s.estimate_hours is None else f"{s.estimate_hours:g}",
+            s.command,
+        )
+    console.print(table)
+    req = [s for s in specs if not s.optional]
+    known = [s.estimate_hours for s in req if s.estimate_hours is not None]
+    console.print(
+        f"{len(specs)} runs ({len(req)} required); estimated {sum(known):.0f} h for "
+        f"{len(known)} required runs with estimates -> {path}",
+        markup=False,
+    )
 
 
 if __name__ == "__main__":

@@ -267,6 +267,38 @@ class ExperimentCfg(Cfg):
     notes: str = ""
 
 
+# --- experiment grids (PLAN 8.1) ------------------------------------------------------------
+
+
+class RunKind(StrEnum):
+    OPD = "opd"
+    SFT_OFFPOLICY = "sft_offpolicy"
+    GRPO = "grpo"
+    EVAL = "eval"  # e.g. the cold-start-only baseline
+
+
+class GridBlockCfg(Cfg):
+    """One block of the grid: every student x teacher x seed combination becomes a run."""
+
+    kind: RunKind = RunKind.OPD
+    students: list[str] = Field(min_length=1)
+    teachers: list[str | None] = Field(default_factory=lambda: [None])  # None = no teacher
+    seeds: list[int] = Field(min_length=1)
+    optional: bool = False  # launched only with --include-optional
+    overrides: list[str] = Field(default_factory=list)  # dotted key=value on the base config
+    note: str = ""
+
+
+class GridCfg(Cfg):
+    name: str
+    base: str  # experiment YAML (relative to configs/) every run starts from
+    blocks: list[GridBlockCfg] = Field(min_length=1)
+    commands: dict[RunKind, str]  # in-container command; {spec} = path to the run's spec file
+    # Operational ETA only (labelled as estimates): hours per run, key "<kind>" or
+    # "<kind>:<student>". Replaced by measured wall-clock once runs of that key finish.
+    estimate_hours: dict[str, float] = Field(default_factory=dict)
+
+
 # --- loading ----------------------------------------------------------------------
 
 C = TypeVar("C", bound=BaseModel)
@@ -277,6 +309,7 @@ _DIR_KINDS: dict[str, type[BaseModel]] = {
     "data": DataCfg,
     "eval": EvalCfg,
     "experiments": ExperimentCfg,
+    "grids": GridCfg,
 }
 _FILE_KINDS: dict[str, type[BaseModel]] = {
     "train/opd": OPDCfg,

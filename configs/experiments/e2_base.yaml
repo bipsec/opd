@@ -1,0 +1,13 @@
+# Base for every E2 run; the grid sets student, teacher and seed per run (PLAN 8.1).
+defaults:
+  data: data/default.yaml
+  opd: train/opd.yaml
+  sft: train/sft.yaml
+  eval: eval/default.yaml
+name: e2
+student: S1
+teacher: T16
+seeds: [0]
+node: local
+amendments: []
+notes: ""

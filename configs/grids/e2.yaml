@@ -1,0 +1,45 @@
+# E2 main grid (EXPERIMENT_PLAN "E2 — Main grid"); expanded by `qopd queue plan e2`.
+name: e2
+base: experiments/e2_base.yaml
+blocks:
+  - kind: opd
+    students: [S1, S2]
+    teachers: [T16, T8, T4-fp, T4-int, T3]
+    seeds: [0, 1]
+    note: OPD, 20 runs
+  - kind: opd
+    students: [S1]
+    teachers: [T2]
+    seeds: [0, 1]
+    optional: true
+    note: OPD stress rung (optional)
+  - kind: opd
+    students: [S1]
+    teachers: [T16, T4-int, T3]
+    seeds: [2]
+    optional: true
+    note: third seed for S1 if time allows
+  - kind: eval
+    students: [S1, S2]
+    seeds: [0]
+    note: baseline, cold start only (evaluation)
+  - kind: sft_offpolicy
+    students: [S1, S2]
+    teachers: [T16]
+    seeds: [0, 1]
+    note: baseline, off-policy SFT on T16 traces, compute-matched
+  - kind: grpo
+    students: [S1]
+    seeds: [0, 1]
+    note: baseline, RLVR (GRPO), wall-clock-matched
+commands:
+  # Trainer CLIs arrive in steps 6.2 (OPD), 8.2 (SFT baseline, GRPO); eval exists (3.2).
+  opd: qopd train opd --spec {spec}
+  sft_offpolicy: qopd train sft --spec {spec}
+  grpo: qopd train grpo --spec {spec}
+  eval: qopd train eval --spec {spec}
+estimate_hours:  # doc budget estimates per run (to be replaced by the E0 pilot measurements)
+  "opd:S1": 17
+  "opd:S2": 6
+  sft_offpolicy: 5
+  grpo: 17

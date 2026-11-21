@@ -12,6 +12,7 @@ from qopd.config import (
     DataCfg,
     EvalCfg,
     ExperimentCfg,
+    GridCfg,
     ModelCfg,
     OPDCfg,
     QuantCfg,
@@ -39,12 +40,22 @@ OVERRIDES = {
     EvalCfg: ["sampling.top_p=0.9", "suites.math500.n_samples=2"],
     ClusterCfg: ["env_file=other.env"],
     ExperimentCfg: ["seeds=[0,1]", "notes=round-trip"],
+    GridCfg: ["name=e2x"],
 }
 
 
 def test_found_every_config_dir():
     rel = {p.relative_to(CONFIG_ROOT).parts[0] for p in FILES}
-    assert {"models", "quant", "data", "train", "eval", "experiments", "cluster.yaml"} <= rel
+    assert {
+        "models",
+        "quant",
+        "data",
+        "train",
+        "eval",
+        "experiments",
+        "grids",
+        "cluster.yaml",
+    } <= rel
 
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(CONFIG_ROOT)))
