@@ -2,7 +2,7 @@
 id: T16
 source: Qwen/Qwen3-30B-A3B
 source_type: hf
-revision: null          # pinned when downloaded (step 1.1 / 4.1)
+revision: ad44e777bcd18fa416d9da3bd8f70d33ebb85d39          # pinned commit
 backend: vllm
 role: teacher
 bits: 16

@@ -14,7 +14,7 @@ student for seeds and replication), starting from the post-trained checkpoints
 \todo{confirm post-trained vs.\ Base at the 1.4 checkpoint}. Every model is pinned to a Hub
 commit. Before use, a hard check compares vocabulary, merges, added and special tokens, chat
 template and the tokenization pipeline of every teacher--student pair and refuses to run on any
-difference (S1 vs.\ S2 verified; teacher pairs \TBD).
+difference (verified for S1 vs.\ S2 and for Qwen3-30B-A3B vs.\ both students; Qwen3-8B \TBD).
 
 \subsection{Teacher quantization ladder}\label{sec:setup-ladder}
 Table~\ref{tab:ladder} lists the rungs. All quantized rungs are calibrated on the same
