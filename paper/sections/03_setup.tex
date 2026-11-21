@@ -85,12 +85,15 @@ exceeds 8{,}192 tokens is dropped rather than truncated (\TBD{} dropped), and se
 packed. Training uses the settings of Table~\ref{tab:hparams}, with the loss averaged over all
 response tokens of each 32-sequence batch.
 
-\paragraph{OPD rounds.} One round (i) samples \nPrompts{} prompts $\times$ \nRollouts{}
-rollouts from the student (temperature 1, at most \rolloutMaxTok{} tokens); (ii) scores every
+\paragraph{OPD rounds.} One round (i) samples \nPrompts{} prompts---the next block of a fixed
+seeded permutation of the training split, so no prompt repeats within a run---$\times$
+\nRollouts{} rollouts from the student (temperature 1, at most \rolloutMaxTok{} tokens); (ii) scores every
 sampled token with the teacher at bit-width $b$ through vLLM \citep{kwon2023vllm}
 \texttt{prompt\_logprobs}, logging the top-\teacherTopK{} alternatives; (iii) forms
 $r_t$ (Eq.~\ref{eq:reward}); (iv) takes one optimizer step on Eq.~\ref{eq:loss}; and (v) syncs
-the weights into the rollout engine. The loss is averaged over all response tokens of the
+the weights into the rollout engine. The student log-probabilities in $r_t$ are recomputed by
+the trainer from the same weights that generated the rollouts (the inference engine's own
+sampled log-probabilities are logged only as a consistency check). The loss is averaged over all response tokens of the
 round's \nPrompts{}$\times$\nRollouts{} rollouts,
 \begin{equation}
   \hat{\mathcal{L}}(\theta) = -\frac{1}{N}\sum_{i}\sum_{t\in R_i} \sg(r_{i,t})\,
@@ -112,9 +115,16 @@ decoding and re-tokenizing would silently shift every per-token reward. The vLLM
 agrees with a plain transformers forward pass to a mean absolute difference of
 \agreeMeanAbs{} nats per token (Appendix, Table~\ref{tab:agreement}).
 
-\paragraph{Run modes.} Teacher and student are either co-resident in memory or loaded in
-alternation each round; the choice is made from measured timings in a pilot run (E0).
-\TBD{} \todo{mode chosen at the E0 gate, with the measured per-stage timings}
+\paragraph{Run modes.} In \emph{co-resident} mode the rollout engine, the teacher and the
+trainer stay in memory for the whole run. In \emph{phase-alternating} mode the trainer stays
+loaded while the rollout engine and the teacher are each loaded only for their stage of the round
+and released afterwards, so they never share memory; weights are synced by saving the trained
+student and loading the next round's engine from it. The mode is chosen from measured timings in
+a pilot run (E0). \TBD{} \todo{mode chosen at the E0 gate, with the measured per-stage timings}
+
+\paragraph{Resumability.} Every 20 rounds the run saves the student in Hugging Face format and
+the full trainer state (weights, optimizer, schedule, round); a restarted run continues from it
+and reproduces the uninterrupted run exactly (tested).
 
 \input{tables/hparams}
 

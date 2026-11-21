@@ -480,5 +480,17 @@ def train_sft_cmd(
     console.print(f"final checkpoint: {run_sft(spec)}", markup=False)
 
 
+@train_app.command("opd")
+def train_opd_cmd(
+    spec: Annotated[Path, typer.Option(help="ExperimentCfg YAML with opd + teacher.")],
+    stop_after_rounds: Annotated[int | None, typer.Option(help="Pause after N rounds.")] = None,
+) -> None:
+    """OPD round loop (PLAN 6.2); resumable; writes runs/<name>/<spec stem>/."""
+    from qopd.train.opd_loop import run_opd_spec  # noqa: PLC0415
+
+    st = run_opd_spec(spec, stop_after_rounds)
+    console.print(f"status={st.get('status')} round={st.get('round')}", markup=False)
+
+
 if __name__ == "__main__":
     app()

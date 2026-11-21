@@ -17,5 +17,9 @@ teacher accuracy vs.\ student accuracy; comparison of the two.}
 \paragraph{Post-release benchmarks.} \TBD{} \todo{AIME 2026 + HMMT Feb 2026 separately; note any
 disagreement with the older sets.}
 
-\paragraph{Training dynamics.} \TBD{} \todo{entropy, response length, KL to the cold-start model,
-truncation and repetition rate per rung; any collapse or looping at low bit-widths.}
+\paragraph{Training dynamics.} Every round logs the reward distribution (mean, standard
+deviation, 5th--95th percentiles), the student's mean token entropy, the response length, the
+truncation rate (rollouts reaching \rolloutMaxTok{} tokens), and the repetition rate---the share
+of rollouts whose final 8-gram already occurs earlier in the same response, a direct signature of
+looping. \TBD{} \todo{these curves per rung; any entropy collapse or looping at low bit-widths;
+KL to the cold-start model.}

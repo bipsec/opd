@@ -132,11 +132,17 @@ class RolloutEngine:
         shutdown_llm(llm, f"rollout engine {self.model_path}")
 
     def restart(self, model_path: str, revision: str | None = None) -> float:
-        """Reload from new weights; returns seconds taken."""
+        """Point the engine at new weights; restart it only if it was running.
+
+        (Phase-alternating OPD keeps the engine stopped between rounds; the next ``start``
+        then loads the new weights.) Returns seconds taken.
+        """
         t0 = time.perf_counter()
+        was_running = self.running
         self.stop()
         self.model_path, self.revision = model_path, revision
-        self.start()
+        if was_running:
+            self.start()
         return time.perf_counter() - t0
 
     def generate(
