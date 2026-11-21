@@ -19,3 +19,7 @@ min_lr_ratio: 0.1         # cosine decay to 10% of peak
 max_seq_len: 8192         # prompt + response
 drop_overlong: true       # longer traces dropped, not truncated
 packing: false
+# operational
+traces: data/coldstart/traces.jsonl   # exact prompt_ids + response_ids (step 5.1)
+checkpoint_every_steps: 50
+seed: 0

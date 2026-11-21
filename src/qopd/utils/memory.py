@@ -52,7 +52,8 @@ def snapshot(tag: str = "") -> MemSnapshot:
     mi = read_meminfo()
     alloc = reserved = None
     torch = sys.modules.get("torch")  # never import torch just to measure
-    if torch is not None and torch.cuda.is_available():
+    # never create a CUDA context just to measure (is_initialized does not create one)
+    if torch is not None and torch.cuda.is_initialized():
         alloc = torch.cuda.memory_allocated() / 1e9
         reserved = torch.cuda.memory_reserved() / 1e9
     return MemSnapshot(

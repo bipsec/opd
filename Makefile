@@ -40,7 +40,7 @@ format:
 	$(IN) sh -c "ruff check --fix $(SRC) && ruff format $(SRC)"
 
 test:
-	$(IN) python -m pytest -m "not gpu and not slow"
+	$(IN) env CUDA_VISIBLE_DEVICES= python -m pytest -m "not gpu and not slow"  # CPU tests never touch the GPU
 
 test-gpu:
 	$(IN) python -m pytest -m "gpu or slow"

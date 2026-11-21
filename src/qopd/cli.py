@@ -38,6 +38,8 @@ data_app = typer.Typer(
 app.add_typer(data_app, name="data")
 queue_app = typer.Typer(help="Experiment grids and the job queue (PLAN 8.1).", no_args_is_help=True)
 app.add_typer(queue_app, name="queue")
+train_app = typer.Typer(help="Trainers (SFT now; OPD in 6.2, GRPO in 8.2).", no_args_is_help=True)
+app.add_typer(train_app, name="train")
 
 
 def _print_version(value: bool) -> None:
@@ -466,6 +468,16 @@ def queue_plan(grid: Annotated[str, typer.Argument(help="Grid name in configs/gr
         f"{len(known)} required runs with estimates -> {path}",
         markup=False,
     )
+
+
+@train_app.command("sft")
+def train_sft_cmd(
+    spec: Annotated[Path, typer.Option(help="ExperimentCfg YAML with an sft section.")],
+) -> None:
+    """Cold-start / off-policy SFT (PLAN 5.2); resumable; writes runs/<name>/<spec stem>/."""
+    from qopd.train.sft import run_sft  # noqa: PLC0415
+
+    console.print(f"final checkpoint: {run_sft(spec)}", markup=False)
 
 
 if __name__ == "__main__":

@@ -79,7 +79,11 @@ $>5$ points before relying on the harness.}
 \subsection{Distillation procedure}\label{sec:setup-method}
 \paragraph{Cold start.} Each student is first fine-tuned for one epoch on the \nColdstart{}
 cold-start prompts answered once by the BF16 teacher in thinking mode, keeping only verified
-correct traces. This set is generated once and shared by every condition.
+correct traces. This set is generated once and shared by every condition: \TBD{} verified traces
+\todo{count from step 5.1}. Traces are stored as exact token ids; any whose prompt plus response
+exceeds 8{,}192 tokens is dropped rather than truncated (\TBD{} dropped), and sequences are not
+packed. Training uses the settings of Table~\ref{tab:hparams}, with the loss averaged over all
+response tokens of each 32-sequence batch.
 
 \paragraph{OPD rounds.} One round (i) samples \nPrompts{} prompts $\times$ \nRollouts{}
 rollouts from the student (temperature 1, at most \rolloutMaxTok{} tokens); (ii) scores every

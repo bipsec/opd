@@ -209,6 +209,10 @@ class SFTCfg(Cfg):
     max_seq_len: int = Field(8192, gt=0)
     drop_overlong: bool = True
     packing: bool = False
+    # Operational (not scientific) settings:
+    traces: str = "data/coldstart/traces.jsonl"  # prompt_ids + response_ids per line (step 5.1)
+    checkpoint_every_steps: int = Field(50, gt=0)  # resumable state (model + optimizer + data)
+    seed: int = 0  # data order
 
 
 # --- evaluation -----------------------------------------------------------------
