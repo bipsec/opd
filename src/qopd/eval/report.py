@@ -84,6 +84,13 @@ def write_sanity_report(
     lines += [f"- {m}: `{project_relative(d)}/`" for m, d in runs.items()]
     lines += [
         "",
+        "Qwen3 report: arXiv:2505.09388 (`reports/published/qwen3_tech_report.json`); its "
+        "thinking-mode decoding is top-k 20 and up to 32,768 output tokens, ours top-k off and "
+        "16,384 (doc setting).",
+        "",
+    ]
+    lines += [
+        "",
         "pass@1 and its standard error are in percentage points; truncated = hit 16,384 tokens; "
         "no answer = no final answer after `</think>` or nothing parsable. Generation time is "
         "wall-clock inside `generate` (engine load excluded), summed over resumes.",

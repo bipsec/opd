@@ -55,7 +55,7 @@ def test_number_macros_defined():
         used |= {
             m
             for m in re.findall(
-                r"\\(n[A-Z]\w*|agree\w+|rolloutMaxTok|teacherTopK|entropyBuckets)", text
+                r"\\(n[A-Z]\w*|agree\w+|rolloutMaxTok|teacherTopK|entropyBuckets|san\w+)", text
             )
         }
     assert used <= defined, sorted(used - defined)

@@ -4,14 +4,17 @@ Official post-trained students, thinking mode, temperature 0.6, top-p 0.95, max 
 
 | Model | Suite | pass@1 | ± s.e. | Done | Mean tokens | Truncated | No answer | Generation time | tok/s | Qwen3 report |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| S2 | gsm8k | 80.6 | 1.1 | 1319/1319 | 2039 | 0.5% | 0.5% | 1 h 08 min | 658 | TBD |
-| S2 | math500 | 72.4 | 2.0 | 500/500 | 5256 | 7.6% | 7.2% | 2 h 18 min | 318 | TBD |
-| S1 | gsm8k | 90.1 | 0.8 | 1319/1319 | 2324 | 0.2% | 0.2% | 1 h 36 min | 534 | TBD |
-| S1 | math500 | 86.0 | 1.6 | 500/500 | 5452 | 7.8% | 6.6% | 2 h 48 min | 271 | TBD |
+| S2 | gsm8k | 80.6 | 1.1 | 1319/1319 | 2039 | 0.5% | 0.5% | 1 h 08 min | 658 | n/a (base models only, Table 8) |
+| S2 | math500 | 72.4 | 2.0 | 500/500 | 5256 | 7.6% | 7.2% | 2 h 18 min | 318 | 77.6 (Table 19) |
+| S1 | gsm8k | 90.1 | 0.8 | 1319/1319 | 2324 | 0.2% | 0.2% | 1 h 36 min | 534 | n/a (base models only, Table 8) |
+| S1 | math500 | 86.0 | 1.6 | 500/500 | 5452 | 7.8% | 6.6% | 2 h 48 min | 271 | 93.4 (Table 19) |
 
 Sources:
 
 - S2: `runs/eval/S2__gsm8k+math500__n1__t16384__s0/`
 - S1: `runs/eval/S1__gsm8k+math500__n1__t16384__s0/`
+
+Qwen3 report: arXiv:2505.09388 (`reports/published/qwen3_tech_report.json`); its thinking-mode decoding is top-k 20 and up to 32,768 output tokens, ours top-k off and 16,384 (doc setting).
+
 
 pass@1 and its standard error are in percentage points; truncated = hit 16,384 tokens; no answer = no final answer after `</think>` or nothing parsable. Generation time is wall-clock inside `generate` (engine load excluded), summed over resumes.

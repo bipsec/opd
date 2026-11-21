@@ -71,8 +71,15 @@ built evaluation sets, written as a boxed final answer, is graded correct, and c
 integer gold by one is always graded wrong.
 
 \paragraph{Sanity check.} Table~\ref{tab:sanity} evaluates the official students with this
-harness. \todo{Compare with the Qwen3 technical report (cite page); investigate any gap
-$>5$ points before relying on the harness.}
+harness. On MATH-500 our pass@1 (S1 \sanOneMath{}, S2 \sanTwoMath{}) is below the Qwen3 technical
+report's thinking-mode values (\sanOnePub{} and \sanTwoPub{}; \citealp{qwen3}, Table 19). The gap
+is the output limit: the report allows up to 32{,}768 tokens, we allow 16{,}384 as fixed in our
+design, and \sanOneTrunc{}\% (S1) and \sanTwoTrunc{}\% (S2) of our responses reach it and count as
+incorrect. Among responses that finish within the limit, accuracy is \sanOneFin{}\% and
+\sanTwoFin{}\%, close to the published values, and every finished response yields a gradable
+answer, so prompt template and answer extraction are not the cause. Because the limit is the same
+for every condition, it lowers absolute scores but does not bias comparisons between teacher rungs;
+we report truncation rates throughout.
 
 \input{tables/sanity}
 

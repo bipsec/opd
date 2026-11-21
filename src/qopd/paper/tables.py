@@ -286,7 +286,9 @@ def tab_sanity() -> str:
             r = res.get(s)
             ok = r is not None and r["complete"]
             cells += [pct(r["pass_at_1"]) if ok else TBD, pct(r["truncation_rate"]) if ok else TBD]
-        cells += [TBD, TBD]  # published (Qwen3 technical report)
+        pub = _json(PROJECT_ROOT / "reports" / "published" / "qwen3_tech_report.json")
+        pm = pub["thinking_mode_post_trained"]["MATH-500"].get(m) if pub else None
+        cells += ["n/a" if pub else TBD, f"{pm:.1f}" if pm is not None else TBD]
         rows.append(cells)
     return table(
         "tab:sanity",
@@ -296,7 +298,8 @@ def tab_sanity() -> str:
         ["Student", "GSM8K", "trunc.", "MATH-500", "trunc.", "Rep. GSM8K", "Rep. MATH-500"],
         rows,
         "runs/eval/S{1,2}__gsm8k+math500__n1__t16384__s0",
-        note="Rep.: published Qwen3 technical-report values, TBD until added with a page citation.",
+        note="Rep.: Qwen3 technical report \\citep{qwen3}, Table 19 (thinking mode, top-$k$ 20, "
+        "up to 32{,}768 tokens); GSM8K is reported there only for base models.",
     )
 
 
@@ -460,6 +463,15 @@ def number_macros() -> dict[str, str]:
         "teacherTopK": str(opd.teacher_top_k),
         "entropyBuckets": _entropy_buckets(),
     }
+    tr = _json(PROJECT_ROOT / "reports" / "sanity_truncation.json")
+    pub = _json(PROJECT_ROOT / "reports" / "published" / "qwen3_tech_report.json")
+    for st, tag in (("S1", "One"), ("S2", "Two")):
+        t = tr["students"].get(st) if tr else None
+        m[f"san{tag}Math"] = pct(t["pass_at_1"]) if t else TBD
+        m[f"san{tag}Trunc"] = pct(t["truncated"]) if t else TBD
+        m[f"san{tag}Fin"] = pct(t["acc_finished"]) if t else TBD
+        pv = pub["thinking_mode_post_trained"]["MATH-500"].get(st) if pub else None
+        m[f"san{tag}Pub"] = f"{pv:.1f}" if pv is not None else TBD
     return m
 
 

@@ -1,0 +1,22 @@
+{
+  "suite": "math500",
+  "max_tokens": 16384,
+  "students": {
+    "S2": {
+      "n": 500,
+      "pass_at_1": 0.724,
+      "truncated": 0.076,
+      "acc_finished": 0.7835497835497836,
+      "upper_bound": 0.8,
+      "no_answer_among_finished": 0
+    },
+    "S1": {
+      "n": 500,
+      "pass_at_1": 0.86,
+      "truncated": 0.078,
+      "acc_finished": 0.9327548806941431,
+      "upper_bound": 0.938,
+      "no_answer_among_finished": 0
+    }
+  }
+}

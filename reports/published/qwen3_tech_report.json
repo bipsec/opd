@@ -1,0 +1,15 @@
+{
+  "source": "Qwen3 Technical Report, arXiv:2505.09388 (HTML version, https://arxiv.org/html/2505.09388), fetched 2026-11-21",
+  "thinking_mode_post_trained": {
+    "table": "Table 19 (Section 4.6, 'Comparison among Qwen3-1.7B / Qwen3-0.6B (Thinking) and other reasoning baselines')",
+    "decoding": "temperature 0.6, top-p 0.95, top-k 20; max output 32,768 tokens (38,912 for AIME'24/'25)",
+    "MATH-500": {"S2": 77.6, "S1": 93.4},
+    "AIME24": {"S2": 10.7, "S1": 48.3},
+    "AIME25": {"S2": 15.1, "S1": 36.8}
+  },
+  "base_models_only": {
+    "table": "Table 8 (Section 3.3, base models; not comparable to our post-trained thinking-mode evaluation)",
+    "GSM8K": {"Qwen3-0.6B-Base": 59.59, "Qwen3-1.7B-Base": 75.44}
+  },
+  "note": "The HTML version has no page numbers; cite the table and section."
+}
