@@ -1,0 +1,11 @@
+% Abstract: finalize after E2. Every number here must come from tables/numbers.tex.
+On-policy distillation (OPD) trains a student on its own samples, scored token by token by a
+teacher. Published OPD results almost always use a full-precision teacher, yet practitioners
+who run distillation on a single desktop machine typically serve the teacher in FP8, NVFP4 or
+4-bit form. We measure what teacher precision costs. Using Qwen3-30B-A3B as the teacher at
+BF16, FP8, NVFP4, INT4 (AWQ) and 3-bit (GPTQ), and Qwen3-1.7B and Qwen3-0.6B as students, we
+(i) quantify how faithfully each quantized teacher reproduces the BF16 per-token reward on
+fixed student rollouts, (ii) run the full OPD grid on math reasoning, and (iii) compare a large
+quantized teacher with a smaller full-precision one at equal memory. \TBD{} (headline findings:
+one sentence each for H1--H4, written once E2 and E4 are complete). All experiments run on one
+NVIDIA DGX Spark; we release code, data splits, teacher log-probabilities and checkpoints.

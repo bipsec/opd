@@ -1,0 +1,42 @@
+\section{Background and related work}\label{sec:background}
+
+\paragraph{OPD as policy optimization with a token reward.} Let $\piS$ be the student and
+$\piT$ the teacher quantized to $b$ bits. For a prompt $x$ and a student sample
+$y\sim\piS(\cdot\mid x)$, define the per-token reward
+\begin{equation}
+  r_t = \log \piT(y_t \mid x, y_{<t}) - \log \piS(y_t \mid x, y_{<t}).
+  \label{eq:reward}
+\end{equation}
+Sampled-token reverse-KL distillation minimizes
+\begin{equation}
+  \mathcal{L}(\theta) = -\,\mathbb{E}_{y\sim\piS}\Big[\sum_t \sg\big(r_t\big)\,
+  \log\piS(y_t\mid x, y_{<t})\Big],
+  \label{eq:loss}
+\end{equation}
+a policy-gradient estimator of $\mathrm{KL}(\piS\,\|\,\piT)$ in which the reward is held fixed
+(stop-gradient, $\sg$). The teacher enters only through $\log\piT$ on student-written tokens,
+which is why its precision can matter even when its own generations look unaffected.
+Variants replace the sampled-token estimator with a KL over the teacher's top-$k$ tokens, clip
+$r_t$ \citep{reopold2026}, add a trust region \citep{trustregionopd2026}, or precompute teacher
+log-probabilities to remove the live teacher \citep{lightningopd2026}. A survey organizes these
+choices by feedback signal, teacher access and loss granularity \citep{opdsurvey2026};
+\citet{easyopd2026} provide a modular framework for comparing them.
+
+\paragraph{When the teacher's signal is uninformative.} A wide student--teacher gap can make the
+token signal uninformative; \citet{understandingopd2026} propose an informativeness measure that
+we reuse as one of our fidelity metrics. \citet{rethinkingopd2026} find that alignment of
+thinking patterns matters more than raw teacher strength and that an off-policy cold start
+fixes many OPD failures; we therefore start every condition from the same cold-start student.
+
+\paragraph{Quantization formats.} We study the formats a desktop practitioner would use for the
+teacher: FP8 weights and activations (W8A8), NVIDIA's 4-bit floating-point format (NVFP4),
+4-bit integer weights with activation-aware scaling \citep[AWQ, W4A16, group 128;][]{lin2024awq},
+3-bit integer weights from second-order rounding \citep[GPTQ, group 128;][]{frantar2023gptq}, and
+optionally a 2-bit llama.cpp k-quant \citep[Q2\_K;][]{llamacpp}. All quantized rungs share one
+calibration set (Section~\ref{sec:setup-ladder}).
+
+\paragraph{Closest work.} \citet{quantstudent2026} use OPD to recover reasoning in a low-bit
+\emph{student} guided by a frozen full-precision teacher. To our knowledge no prior study varies
+the precision of the \emph{teacher} in OPD. \todo{Repeat the novelty search (arXiv,
+alphaXiv, Semantic Scholar: ``quantized teacher'', ``low-bit teacher distillation'', ``teacher
+precision'' + ``on-policy'') weekly until submission; record dates here.}

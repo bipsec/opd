@@ -1,0 +1,24 @@
+\section{Teacher-signal fidelity (E1)}\label{sec:fidelity}
+
+E1 asks, without any training, how faithfully each quantized teacher reproduces the BF16
+teacher's per-token reward on the rollouts the student actually produces.
+
+\paragraph{Protocol.} For each cold-started student we sample a fixed pool of 2{,}000 rollouts
+from the \nProbe{} probe prompts and store the exact token ids. Every rung scores the same pool
+(top-\teacherTopK{} log-probabilities at every response position), so all differences come from
+the teacher.
+
+\paragraph{Metrics} (each against BF16, over all response tokens of the pool):
+Pearson correlation of $r_t$; mean absolute reward error $\mathbb{E}|r_t^{(b)}-r_t^{(16)}|$;
+KL between the quantized and BF16 teacher over the BF16 top-\teacherTopK{} tokens (renormalized);
+top-1 token agreement; the share of tokens whose reward changes sign; and the informativeness
+measure of \citet{understandingopd2026} \todo{implement exactly as defined there; ask for the PDF
+if ambiguous}. Every metric is also broken down by student-entropy bucket, which feeds H3.
+
+\placeholderfig{fig:fidelity}{Teacher-signal fidelity against teacher bits for both students
+(E1).}{fidelity metrics vs.\ bits per rung, one line per student}
+
+\input{tables/fidelity}
+
+\paragraph{Results.} \TBD{} \todo{Do the rungs separate? Where is the first visible drop? Does
+the ordering match teacher MATH-500 accuracy (Table~\ref{tab:ladder})?}

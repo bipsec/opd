@@ -1,0 +1,57 @@
+% qopd paper draft (PLAN 11.3). Build: latexmk -pdf main.tex (or upload paper/ to Overleaf).
+% Regenerate tables/numbers first: python scripts/make_paper_tables.py (from the repo root).
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{xspace}
+
+% --- draft markers: grep for \TBD{} before submission -------------------------------
+\newcommand{\TBD}{\textcolor{red}{\textbf{TBD}}\xspace}
+\newcommand{\todo}[1]{\textcolor{blue}{[\textit{#1}]}}
+\newcommand{\placeholderfig}[3]{% {label}{caption}{what will be plotted}
+  \begin{figure}[t]\centering
+  \fbox{\parbox{0.85\linewidth}{\centering\vspace{2.5em}\TBD: #3\vspace{2.5em}}}
+  \caption{#2}\label{#1}\end{figure}}
+
+% --- notation -----------------------------------------------------------------------------
+\newcommand{\piT}[1][b]{\pi_T^{(#1)}}
+\newcommand{\piS}{\pi_\theta}
+\newcommand{\sg}{\operatorname{sg}}
+
+% numbers quoted in the text (generated from runs/, reports/, data/ stats)
+\input{tables/numbers}
+
+\title{How Many Bits Does a Teacher Need?\\On-Policy Distillation with Quantized Teachers}
+\author{\TBD}
+\date{Draft --- \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_setup}
+\input{sections/04_fidelity}
+\input{sections/05_distillation}
+\input{sections/06_mechanism}
+\input{sections/07_memory_cost}
+\input{sections/08_limitations}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\appendix
+\input{sections/09_appendix}
+
+\end{document}

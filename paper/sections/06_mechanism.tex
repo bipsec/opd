@@ -1,0 +1,28 @@
+\section{Why it breaks and how to fix it (E3)}\label{sec:mechanism}
+
+E3 uses S1 with two teachers: T4-int and the lowest rung that still trains in E2.
+
+\paragraph{Where the signal is lost.} We bucket response tokens by student entropy and measure
+the reward error of the quantized teacher in each bucket (H3).
+
+\placeholderfig{fig:entropy}{Reward error against student-entropy bucket, per rung
+(E1 pools).}{mean $|r_t^{(b)}-r_t^{(16)}|$ by entropy bucket}
+
+\paragraph{Recovery methods} (60 rounds each, all else as in E2), each a drop-in change to
+Eq.~\ref{eq:loss-batch} that reduces to it exactly when switched off:
+\begin{itemize}
+  \item \emph{Reward clipping} \citep{reopold2026}: $r_t \leftarrow \min(\max(r_t,-\tau),\tau)$
+        with $\tau\in\{2,5\}$.
+  \item \emph{Top-\teacherTopK{} smoothing}: at each sampled prefix, the sampled-token term is
+        replaced by the analytic reverse KL over the teacher's top-\teacherTopK{} tokens $K_t$,
+        with both distributions renormalized on $K_t$:
+        $\sum_{k\in K_t}\tilde p_S(k)\,[\log\tilde p_S(k)-\log\tilde p_T(k)]$.
+        With $K_t$ the full vocabulary this is the exact per-position reverse KL.
+  \item \emph{Hybrid}: $r_t \leftarrow r_t + \lambda R$, where $R\in\{0,1\}$ is the
+        verifier's correctness reward of the whole sequence, added to each of its tokens.
+        \todo{$\lambda$ to be fixed before E3}
+\end{itemize}
+
+\input{tables/recovery}
+
+\paragraph{Results.} \TBD{}

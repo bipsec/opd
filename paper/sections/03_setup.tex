@@ -1,0 +1,152 @@
+\section{Experimental setup}\label{sec:setup}
+
+Every condition shares the student initialization, cold-start data, prompts, seeds, sampling
+settings and evaluation harness; in the main grid only the teacher's precision changes, and no
+hyperparameter is re-tuned per teacher rung.
+
+\subsection{Models}\label{sec:setup-models}
+All models are from the Qwen3 family \citep{qwen3}, so teacher and student share a tokenizer,
+which token-level OPD requires. The main teacher is Qwen3-30B-A3B in thinking mode (a
+mixture-of-experts model with 30.5B total and 3.3B active parameters). The dense Qwen3-8B serves
+as a second teacher for the equal-memory comparison and separates mixture-of-experts from dense
+quantization effects. The students are Qwen3-1.7B (S1, main student) and Qwen3-0.6B (S2, cheap
+student for seeds and replication), starting from the post-trained checkpoints
+\todo{confirm post-trained vs.\ Base at the 1.4 checkpoint}. Every model is pinned to a Hub
+commit. Before use, a hard check compares vocabulary, merges, added and special tokens, chat
+template and the tokenization pipeline of every teacher--student pair and refuses to run on any
+difference (S1 vs.\ S2 verified; teacher pairs \TBD).
+
+\subsection{Teacher quantization ladder}\label{sec:setup-ladder}
+Table~\ref{tab:ladder} lists the rungs. All quantized rungs are calibrated on the same
+\nCalib{} prompts, drawn from the training pool but never trained on, each paired with a
+reasoning trace written by the BF16 teacher in chat format and cut at 2{,}048 tokens. We record
+each rung's memory, load time, scoring throughput and its own MATH-500 accuracy; the latter is
+the ``teacher accuracy'' predictor in H2.
+
+\input{tables/ladder}
+
+\subsection{Data}\label{sec:setup-data}
+\paragraph{Training prompts.} The training pool is DeepScaleR-Preview \citep{deepscaler2025}
+(\nPoolRaw{} problems compiled from AIME 1984--2023, AMC before 2023, Omni-MATH and STILL).
+We keep a problem only if math-verify \citep{mathverify} parses its answer to a single real
+number with no free variables (integers, rationals and closed forms such as $\sqrt2-1$) and the
+gold answer, written as \verb|\boxed{...}|, verifies against itself. We drop exact duplicates
+(case- and whitespace-folded); when identical problems carry disagreeing answers we drop all
+copies, since at least one label is wrong. Near-duplicates are removed with MinHash on word
+5-grams (128 permutations, Jaccard $\ge 0.8$). This leaves \nPoolFiltered{} problems
+(Table~\ref{tab:data}).
+
+\paragraph{Contamination.} We drop every training prompt that shares a 13-gram (over lower-cased
+alphanumeric word tokens, so markup and spacing cannot hide an overlap) with any evaluation item:
+\nDecontDropped{} prompts, leaving \nPoolClean{}. Most matches are shared contest boilerplate
+(``\dots where $m$ and $n$ are relatively prime positive integers. Find $m+n$''), which we drop
+anyway; genuine near-copies (sharing at least half of an item's 13-grams) occur only for
+MATH-500, where \nMathNearCopy{} evaluation problems appear in the training source.
+\todo{GPQA-Diamond not yet checked: gated, pending access.}
+
+\paragraph{Splits.} From the clean pool, with a fixed seed, we take \nTrain{} training prompts,
+a cold-start subset of \nColdstart{} of them, \nCalib{} calibration prompts and \nProbe{} probe
+prompts for the fidelity study; calibration and probe are disjoint from training and from each
+other. A manifest records the hash of every file and of every split's id list.
+
+\input{tables/data}
+
+\paragraph{Evaluation.} Table~\ref{tab:evals} lists the benchmarks: GSM8K \citep{cobbe2021gsm8k},
+MATH-500 \citep{hendrycks2021math,lightman2023verify}, AMC 2023, AIME 2024--2026 and HMMT
+February 2026 \citep[the 2025/2026 sets from][]{matharena2025}, and GPQA-Diamond. AIME 2026 and HMMT February
+2026 were released after the models and serve as a contamination-clean check; we report them
+separately and say so if conclusions differ from the older sets. GPQA-Diamond \citep{rein2024gpqa}
+is an out-of-domain check. Decoding uses thinking mode, temperature 0.6, top-p 0.95 and at most
+16{,}384 tokens; we report pass@1 averaged over the samples per problem.
+
+\input{tables/evals}
+
+\paragraph{Answer checking.} Only the text after the last \verb|</think>| is graded; a response
+whose thinking never closes (e.g.\ truncated) has no answer and counts as incorrect, and boxed
+expressions inside the thinking block are ignored. For math, the last \verb|\boxed{}| is
+compared with the gold by math-verify (falling back to math-verify's own extraction if nothing is
+boxed). For multiple choice, the answer is the last option letter found by a fixed pattern
+priority, starting with the requested \texttt{"answer": "C"} format. Every gold answer of the
+built evaluation sets, written as a boxed final answer, is graded correct, and changing an
+integer gold by one is always graded wrong.
+
+\paragraph{Sanity check.} Table~\ref{tab:sanity} evaluates the official students with this
+harness. \todo{Compare with the Qwen3 technical report (cite page); investigate any gap
+$>5$ points before relying on the harness.}
+
+\input{tables/sanity}
+
+\subsection{Distillation procedure}\label{sec:setup-method}
+\paragraph{Cold start.} Each student is first fine-tuned for one epoch on the \nColdstart{}
+cold-start prompts answered once by the BF16 teacher in thinking mode, keeping only verified
+correct traces. This set is generated once and shared by every condition.
+
+\paragraph{OPD rounds.} One round (i) samples \nPrompts{} prompts $\times$ \nRollouts{}
+rollouts from the student (temperature 1, at most \rolloutMaxTok{} tokens); (ii) scores every
+sampled token with the teacher at bit-width $b$ through vLLM \citep{kwon2023vllm}
+\texttt{prompt\_logprobs}, logging the top-\teacherTopK{} alternatives; (iii) forms
+$r_t$ (Eq.~\ref{eq:reward}); (iv) takes one optimizer step on Eq.~\ref{eq:loss}; and (v) syncs
+the weights into the rollout engine. The loss is averaged over all response tokens of the
+round's \nPrompts{}$\times$\nRollouts{} rollouts,
+\begin{equation}
+  \hat{\mathcal{L}}(\theta) = -\frac{1}{N}\sum_{i}\sum_{t\in R_i} \sg(r_{i,t})\,
+  \log\piS(y_{i,t}\mid x_i, y_{i,<t}),
+  \label{eq:loss-batch}
+\end{equation}
+where $R_i$ are the response positions of rollout $i$ and $N=\sum_i|R_i|$; prompt and padding
+positions carry no loss. When the round is split into micro-batches for gradient accumulation,
+each micro-batch is normalized by the same $N$, so the accumulated gradient equals the
+full-batch gradient. Unit tests check that the expected gradient of Eq.~\ref{eq:loss-batch}
+equals $\nabla_\theta\mathrm{KL}(\piS\,\|\,\piT)$ on toy distributions. Runs last \nRounds{} rounds with a checkpoint (and a
+MATH-500 evaluation) every 20 rounds. Table~\ref{tab:hparams} lists all settings; the learning
+rate is chosen once, with the BF16 teacher, and then frozen for every rung.
+
+\paragraph{Exact token handling.} Every rollout is stored as the exact prompt and response token
+ids; the teacher scores exactly \texttt{prompt\_ids + response\_ids} and the scoring backends
+assert this. Sampled sequences are not always the canonical tokenization of their own text, so
+decoding and re-tokenizing would silently shift every per-token reward. The vLLM scoring backend
+agrees with a plain transformers forward pass to a mean absolute difference of
+\agreeMeanAbs{} nats per token (Appendix, Table~\ref{tab:agreement}).
+
+\paragraph{Run modes.} Teacher and student are either co-resident in memory or loaded in
+alternation each round; the choice is made from measured timings in a pilot run (E0).
+\TBD{} \todo{mode chosen at the E0 gate, with the measured per-stage timings}
+
+\input{tables/hparams}
+
+\subsection{Baselines}
+\emph{Cold start only} (evaluation of the starting checkpoints); \emph{off-policy SFT} on BF16
+teacher traces, compute-matched to an OPD run; and \emph{RLVR} with GRPO \citep{shao2024grpo}
+(verifier reward only, group size 4, wall-clock-matched). The RLVR baseline answers the practical
+question of whether a cheap teacher is still better than no teacher.
+
+\subsection{Statistics}\label{sec:stats}
+\paragraph{Intervals.} For each condition we report the mean over seeds with a Student-$t$ 95\%
+interval (two seeds, so these intervals are wide by design) and a percentile bootstrap interval
+over problems (10{,}000 resamples), where pass@1 is the mean over problems of the per-problem
+fraction of correct samples. Differences between two conditions on the same benchmark use a
+paired bootstrap that resamples problems jointly.
+
+\paragraph{H1 (equivalence).} For each quantized rung we compute, per MATH-500 problem, the
+difference in pass rate (pooled over seeds and samples) between the rung's student and the
+T16 student, and run two one-sided $t$-tests against a margin of $\pm1.0$ point, fixed before
+E2. A rung is declared equivalent when both one-sided tests reject at $\alpha=0.05$, i.e.\ when
+the 90\% interval of the mean difference lies inside $(-1, 1)$ points.
+\todo{confirm the paired, per-problem formulation; a per-seed Welch TOST is also implemented}
+
+\paragraph{H2 (predictor comparison).} Across conditions (rung $\times$ student) we compute the
+Spearman correlation of the final student MATH-500 score with (a) the rung's fidelity score
+(Section~\ref{sec:fidelity}) and (b) the rung's own MATH-500 accuracy, and bootstrap the
+difference $|\rho_a|-|\rho_b|$ over conditions. With at most ten conditions this comparison is
+low-powered, and we say so when reporting it.
+
+\paragraph{Multiple comparisons.} The comparisons are fixed in advance---each quantized rung
+against T16, and the two equal-memory teachers of E4---and corrected with Holm's step-down
+procedure. TOST and Holm agree with the \texttt{statsmodels} implementations in our tests.
+
+\subsection{Hardware}
+All experiments run on one NVIDIA DGX Spark (Table~\ref{tab:hardware}); its 128\,GB of memory is
+shared between CPU and GPU, and compute and memory bandwidth, not capacity, are the binding
+limits.
+
+\input{tables/hardware}

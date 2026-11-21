@@ -1,0 +1,15 @@
+\section{Equal memory and cost (E4, E5)}\label{sec:memory}
+
+\paragraph{Equal memory (E4, H4).} We compare Qwen3-30B-A3B at 4 bits with the dense Qwen3-8B
+at BF16, at similar weight memory (measured in Table~\ref{tab:ladder}), both teaching S1 with
+two seeds, and add Qwen3-8B at FP8 and 4 bits (one seed) to see whether mixture-of-experts and
+dense teachers degrade differently.
+
+\placeholderfig{fig:memory}{Student accuracy against teacher memory, with the Qwen3-30B-A3B and
+Qwen3-8B ladders as two curves (E4, E5).}{MATH-500 vs.\ teacher memory (GB), two ladders}
+
+\paragraph{Cost frontier (E5).} Without new runs, we plot student accuracy against teacher
+memory, wall-clock hours and energy (from 1\,Hz power logs) for every E2 and E4 run.
+\TBD{} \todo{cost table: hours, peak memory, kWh, tokens processed per run}
+
+\paragraph{Results.} \TBD{}

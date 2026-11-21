@@ -1,0 +1,20 @@
+\section{Limitations}\label{sec:limitations}
+
+\begin{itemize}
+  \item \emph{One model family.} All teachers and students are Qwen3 models, which the shared
+        tokenizer requires for token-level OPD; other families may quantize differently.
+  \item \emph{Math-heavy evaluation.} Training is on math prompts and evaluation is mostly math;
+        GPQA-Diamond is the only out-of-domain check, and the optional code track is
+        \TBD{} \todo{run or not}.
+  \item \emph{Small students and short runs.} Students have 0.6B and 1.7B parameters and runs
+        last \nRounds{} rounds; effects may differ for larger students or longer training.
+  \item \emph{Few seeds.} Two seeds per condition (one for some E4 runs); AIME-style sets are
+        high-variance, so claims rest on MATH-500 and AIME is supporting evidence only.
+  \item \emph{One machine.} All timings are for one DGX Spark; absolute costs will differ on
+        datacenter hardware, though the ranking of rungs by memory should not.
+  \item \emph{Training-data overlap.} The training source contains MATH-500 problems verbatim;
+        we remove every prompt with a 13-gram overlap, but overlap below that threshold (and with
+        GPQA-Diamond, \TBD{}) is not excluded.
+  \item \emph{Grading policy.} Answers inside an unfinished thinking block are not graded, so the
+        16{,}384-token limit lowers scores for verbose models; we report truncation rates.
+\end{itemize}

@@ -1,0 +1,20 @@
+\section{Reproducibility}\label{app:repro}
+All runs write a fully resolved configuration, the git commit, an environment snapshot, a
+per-round metrics log and a 1\,Hz power and memory log. Models and datasets are pinned to Hub
+commits; the data manifest records file and id hashes of every split and evaluation set. Each
+table in this paper is regenerated from those files by \texttt{scripts/make\_paper\_tables.py}.
+
+\section{Scoring backends and throughput}\label{app:backends}
+\input{tables/agreement}
+\input{tables/throughput}
+
+\section{Quantization recipes}\label{app:quant}
+\TBD{} \todo{tool versions, calibration hash and settings per rung, from each rung's
+\texttt{recipe.json}.}
+
+\section{Per-benchmark results}\label{app:perbench}
+\TBD{}
+
+\section{Compute log}\label{app:compute}
+\TBD{} \todo{machine-hours per experiment, from the run directories; compare with the
+pre-registered budget.}

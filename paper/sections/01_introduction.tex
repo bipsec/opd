@@ -1,0 +1,51 @@
+\section{Introduction}\label{sec:intro}
+
+On-policy distillation (OPD) has become a standard post-training step for small reasoning
+models: the student samples its own outputs, a stronger teacher scores every sampled token,
+and the student is updated with the resulting per-token signal
+\citep{agarwal2024gkd,thinkingmachines2025opd,opdsurvey2026}. Because the student learns on
+its own distribution, OPD avoids the train--test mismatch of off-policy distillation while
+giving a far denser signal than outcome-only reinforcement learning.
+
+Nearly every OPD result is reported with a teacher in full (BF16) precision. In practice the
+teacher is often the largest model a practitioner can fit, and on a single desktop machine it
+is usually served in a compressed format: FP8, NVFP4, or 4-bit integer weights. Quantization
+is known to cost a few points on a model's own benchmarks, but OPD uses the teacher in a
+different way---as a per-token reward $\log\piT(y_t\mid y_{<t})$ evaluated on sequences the
+teacher did not write. Whether small perturbations of that reward matter, and where they
+matter, has not been measured. The closest prior work quantizes the \emph{student} and keeps
+the teacher in full precision \citep{quantstudent2026}; we do the reverse.
+
+\paragraph{Research question.} As the teacher drops from BF16 to FP8, 4-bit and 3-bit, how
+much does the distilled student lose, why, and can the loss be recovered cheaply?
+
+\paragraph{Hypotheses.} We pre-register four hypotheses and test each one
+(Section~\ref{sec:stats}):
+\begin{itemize}
+  \item[\textbf{H1}] \emph{Robustness.} FP8 and 4-bit teachers produce students within 1 point
+        of a BF16-teacher student on MATH-500 (tested for equivalence with TOST).
+  \item[\textbf{H2}] \emph{A breaking point.} Below 4 bits, student gains fall sharply, and
+        teacher-signal fidelity measured on student rollouts predicts the fall better than the
+        teacher's own benchmark score.
+  \item[\textbf{H3}] \emph{Where it breaks.} The lost signal concentrates on high-entropy
+        tokens, where the student is choosing between reasoning paths; clipping or top-$k$
+        smoothing of the per-token reward recovers part of the gap.
+  \item[\textbf{H4}] \emph{Equal memory.} At a fixed memory budget, a larger quantized teacher
+        teaches better than a smaller full-precision one.
+\end{itemize}
+
+\paragraph{Findings.} \TBD{} \todo{one line per hypothesis, from Sections~\ref{sec:fidelity}--\ref{sec:memory}}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A controlled measurement of OPD with a quantization ladder of one teacher
+        (BF16, FP8, NVFP4, INT4-AWQ, 3-bit GPTQ, optional 2-bit GGUF), with everything except
+        teacher precision held fixed and no per-rung tuning.
+  \item A teacher-signal fidelity analysis that needs no training and can be run before
+        choosing a teacher format (Section~\ref{sec:fidelity}).
+  \item A cost--quality frontier---student accuracy against teacher memory, wall-clock and
+        energy---measured on a single desktop machine (Section~\ref{sec:memory}).
+  \item Released code, data splits with hashes, the rollout pools with every rung's teacher
+        log-probabilities, and student checkpoints. A null result (``4 bits is enough'') is
+        reported with the same evidence.
+\end{enumerate}

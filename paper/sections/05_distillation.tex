@@ -1,0 +1,21 @@
+\section{Distillation results (E2)}\label{sec:distillation}
+
+E2 runs full OPD for every student and teacher rung (BF16, FP8, NVFP4, INT4-AWQ, 3-bit GPTQ;
+two seeds each) plus the optional 2-bit stress rung for S1, and the three baselines.
+
+\input{tables/main}
+
+\placeholderfig{fig:bits}{Student MATH-500 pass@1 against teacher bits, with BF16-teacher, SFT
+and RLVR reference lines (E2).}{student MATH-500 vs.\ teacher bits; mean $\pm$ 95\% CI over seeds}
+
+\paragraph{H1 (robustness).} \TBD{} \todo{TOST result per rung vs.\ T16 with the $\pm1.0$ margin;
+Holm-adjusted p-values.}
+
+\paragraph{H2 (breaking point).} \TBD{} \todo{Spearman of fidelity vs.\ student accuracy and of
+teacher accuracy vs.\ student accuracy; comparison of the two.}
+
+\paragraph{Post-release benchmarks.} \TBD{} \todo{AIME 2026 + HMMT Feb 2026 separately; note any
+disagreement with the older sets.}
+
+\paragraph{Training dynamics.} \TBD{} \todo{entropy, response length, KL to the cold-start model,
+truncation and repetition rate per rung; any collapse or looping at low bit-widths.}
