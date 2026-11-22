@@ -1,0 +1,11 @@
+# GPTQModel on top of qopd-quant (Phase 4.2, T3): no aarch64 wheel exists, so build from source
+# against the container's torch (--no-build-isolation). MAX_JOBS bounds the parallel CUDA compile.
+ARG BASE=qopd-quant:26.10
+FROM ${BASE}
+ARG MAX_JOBS=8
+RUN pip install --no-cache-dir setuptools wheel ninja -c /opt/qopd/dev-constraints.txt || true
+RUN MAX_JOBS=${MAX_JOBS} pip install --no-cache-dir --no-build-isolation "gptqmodel>=2.0" \
+      -c /opt/qopd/dev-constraints.txt \
+ && python -c "import torch; print(torch.__version__)" > /opt/qopd/torch-version.gptq \
+ && cmp /opt/qopd/torch-version.dev /opt/qopd/torch-version.gptq \
+ && python -c "import gptqmodel; print('gptqmodel', gptqmodel.__version__)"

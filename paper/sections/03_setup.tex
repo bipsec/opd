@@ -19,7 +19,9 @@ difference (verified for S1 vs.\ S2 and for Qwen3-30B-A3B vs.\ both students; Qw
 \subsection{Teacher quantization ladder}\label{sec:setup-ladder}
 Table~\ref{tab:ladder} lists the rungs. All quantized rungs are calibrated on the same
 \nCalib{} prompts, drawn from the training pool but never trained on, each paired with a
-reasoning trace written by the BF16 teacher in chat format and cut at 2{,}048 tokens. We record
+reasoning trace written by the BF16 teacher in chat format (thinking mode, temperature 0.6,
+top-p 0.95) and cut at 2{,}048 tokens: \calibN{} texts averaging \calibMeanTok{} tokens, \calibAtLimit{}
+of which reach the limit. We record
 each rung's memory, load time, scoring throughput and its own MATH-500 accuracy; the latter is
 the ``teacher accuracy'' predictor in H2.
 

@@ -467,6 +467,10 @@ def number_macros() -> dict[str, str]:
         "teacherTopK": str(opd.teacher_top_k),
         "entropyBuckets": _entropy_buckets(),
     }
+    cal = _json(PROJECT_ROOT / "data" / "calibration" / "calibration_stats.json")
+    m["calibN"] = num(cal["n"]) if cal else TBD
+    m["calibMeanTok"] = num(round(cal["total_tokens_mean"])) if cal else TBD
+    m["calibAtLimit"] = num(cal["reached_limit"]) if cal else TBD
     tr = _json(PROJECT_ROOT / "reports" / "sanity_truncation.json")
     pub = _json(PROJECT_ROOT / "reports" / "published" / "qwen3_tech_report.json")
     for st, tag in (("S1", "One"), ("S2", "Two")):

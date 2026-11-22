@@ -1,7 +1,7 @@
 # 3-bit GPTQ, group 128, via GPTQModel (rung T3). PLAN 4.2.
 format: gptq_w3a16_g128
 scheme: W3A16
-tool: gptqmodel
+tool: llmcompressor          # GPTQ via llm-compressor GPTQModifier (GPTQModel not installable; user decision 2026-11-21)
 weight_bits: 3
 group_size: 128
 calibration:             # doc: same texts for every rung (built in PLAN 4.1)

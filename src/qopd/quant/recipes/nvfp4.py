@@ -1,16 +1,18 @@
-"""NVFP4 via ModelOpt or llm-compressor (rung T4-fp) (PLAN 4.2)."""
+"""NVFP4 (rung T4-fp) via llm-compressor (the doc allows ModelOpt or llm-compressor; llm-compressor
+chosen by the user, PROGRESS.md 2026-11-21: same toolchain and checkpoint format as T8/T4-int)."""
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
-from qopd.quant.recipes import RecipeResult
+from qopd.quant.recipes import LLMCompressorRecipe
 
 
-class NVFP4Recipe:
+class NVFP4Recipe(LLMCompressorRecipe):
     format = "nvfp4"
-    tool = "llmcompressor|modelopt"
+    scheme = "NVFP4"
 
-    def build(self, src: str, calibration: Path, out_dir: Path, **kwargs: Any) -> RecipeResult:
-        raise NotImplementedError("step 4.2")
+    def modifiers(self, ignore: list[str]) -> list[Any]:
+        from llmcompressor.modifiers.quantization import QuantizationModifier  # noqa: PLC0415
+
+        return [QuantizationModifier(targets="Linear", scheme=self.scheme, ignore=ignore)]

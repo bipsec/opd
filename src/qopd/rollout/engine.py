@@ -50,7 +50,11 @@ def _finish_reason(reason: str | None) -> FinishReason:
 
 
 def sampling_params(
-    sampling: SamplingCfg, n: int, stop_token_ids: list[int], seed: int | None
+    sampling: SamplingCfg,
+    n: int,
+    stop_token_ids: list[int],
+    seed: int | None,
+    max_tokens: int | None = None,
 ) -> Any:
     """vLLM ``SamplingParams`` with every field that affects the distribution set."""
     from vllm import SamplingParams  # noqa: PLC0415
@@ -64,7 +68,7 @@ def sampling_params(
         repetition_penalty=1.0,
         presence_penalty=0.0,
         frequency_penalty=0.0,
-        max_tokens=sampling.max_tokens,
+        max_tokens=max_tokens if max_tokens is not None else sampling.max_tokens,
         stop_token_ids=stop_token_ids,
         seed=seed,
         logprobs=0,  # log-prob of the sampled token
@@ -153,6 +157,7 @@ class RolloutEngine:
         problem_ids: list[str] | None = None,
         seed: int | None = None,
         seeds: list[int] | None = None,
+        max_tokens: list[int] | None = None,
     ) -> tuple[list[Rollout], GenerationStats]:
         """Sample ``n`` responses per prompt.
 
@@ -164,7 +169,10 @@ class RolloutEngine:
 
         if problem_ids is not None and len(problem_ids) != len(prompt_ids):
             raise ValueError("problem_ids and prompt_ids differ in length")
-        longest = max(len(p) for p in prompt_ids) + sampling.max_tokens
+        if max_tokens is not None and len(max_tokens) != len(prompt_ids):
+            raise ValueError("max_tokens and prompt_ids differ in length")
+        budgets = max_tokens or [sampling.max_tokens] * len(prompt_ids)  # per-request limits
+        longest = max(len(p) + b for p, b in zip(prompt_ids, budgets, strict=True))
         if longest > self.max_model_len:
             raise ValueError(
                 f"prompt + max_tokens = {longest} > max_model_len {self.max_model_len}"
@@ -175,7 +183,10 @@ class RolloutEngine:
         per_request = seeds or [
             None if base_seed is None else base_seed + i for i in range(len(prompt_ids))
         ]
-        params = [sampling_params(sampling, n, self.stop_ids, s) for s in per_request]
+        params = [
+            sampling_params(sampling, n, self.stop_ids, s, b)
+            for s, b in zip(per_request, budgets, strict=True)
+        ]
         prompts = [TokensPrompt(prompt_token_ids=list(p)) for p in prompt_ids]
         t0 = time.perf_counter()
         with PeakMemory() as pm:

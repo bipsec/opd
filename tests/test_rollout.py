@@ -81,3 +81,12 @@ def test_reload_from_checkpoint_roundtrip(tmp_path):
 def test_opd_rollout_settings_are_on_policy():
     s = load(CONFIG_ROOT / "train" / "opd.yaml", cls=OPDCfg).rollout
     assert (s.temperature, s.top_p, s.top_k) == (1.0, 1.0, -1)
+
+
+def test_sampling_params_per_request_budget():
+    pytest.importorskip("vllm")
+    from qopd.rollout.engine import sampling_params
+
+    s = SamplingCfg(temperature=0.6, max_tokens=100)
+    assert sampling_params(s, 1, [0], 1).max_tokens == 100
+    assert sampling_params(s, 1, [0], 1, max_tokens=37).max_tokens == 37

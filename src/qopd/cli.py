@@ -569,5 +569,39 @@ def report_rungs() -> None:
     console.print(f"wrote {write(collect())}", markup=False)
 
 
+@quant_app.command("build")
+def quant_build(
+    rung: Annotated[
+        str | None, typer.Argument(help="Registry rung, e.g. T8 (default: --base).")
+    ] = None,
+    base: Annotated[str | None, typer.Option(help="Validation: base model id, e.g. S2.")] = None,
+    fmt: Annotated[str | None, typer.Option("--format", help="Validation: quant format.")] = None,
+    out: Annotated[Path | None, typer.Option(help="Validation: output directory.")] = None,
+) -> None:
+    """Quantize a rung (or, for validation, any base model) - run in the qopd-quant image."""
+    from qopd.quant.runner import build_model, build_rung  # noqa: PLC0415
+
+    if rung:
+        res = build_rung(rung)
+    elif base and fmt and out:
+        res = build_model(base, fmt, out)
+    else:
+        raise typer.BadParameter("give a rung, or --base, --format and --out")
+    console.print(f"{res.out_dir}: {res.tool} {res.tool_version}, {res.seconds:.0f}s", markup=False)
+
+
+@quant_app.command("validate")
+def quant_validate(
+    base: Annotated[str, typer.Option(help="BF16 model id the checkpoint was made from.")],
+    quantized: Annotated[Path, typer.Option(help="Quantized checkpoint directory.")],
+    n: Annotated[int, typer.Option()] = 20,
+) -> None:
+    """vLLM log-probs of a quantized checkpoint vs its BF16 base - run in the qopd-dev image."""
+    from qopd.quant.runner import validate  # noqa: PLC0415
+
+    for k, v in validate(base, quantized, n).items():
+        console.print(f"{k:22s} {v}", markup=False)
+
+
 if __name__ == "__main__":
     app()

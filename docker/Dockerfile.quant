@@ -1,0 +1,24 @@
+# qopd quantization image (Phase 4.2): qopd-dev + quantization tools, one tool per layer so a
+# failure names its package. Every package already in qopd-dev (torch, vllm, transformers, ...) is
+# pinned by a constraints file generated here, so nothing installed before can be replaced.
+#
+# llm-compressor pins torch <= 2.14.x in every release; the NGC image ships torch 2.15.0a0. By the
+# user's decision (PROGRESS.md, 2026-11-21) it is installed with --no-deps (+ its other deps under
+# the constraints) and validated on S2 before use. GPTQModel is built in Dockerfile.gptq.
+ARG BASE=qopd-dev:26.10
+FROM ${BASE}
+RUN python /opt/qopd/make_constraints.py > /opt/qopd/dev-constraints.txt \
+ && python -c "import torch; print(torch.__version__)" > /opt/qopd/torch-version.dev
+# llm-compressor 0.15.0 + compressed-tensors without their torch pins
+RUN pip install --no-cache-dir --no-deps "llmcompressor==0.15.0" "compressed-tensors==0.20.1" \
+ && pip install --no-cache-dir "loguru>=0.7.2" "pillow>=12.0.0" -c /opt/qopd/dev-constraints.txt
+RUN pip install --no-cache-dir "auto-round>=0.15.1" -c /opt/qopd/dev-constraints.txt \
+ || (echo "auto-round with deps failed; installing --no-deps" \
+     && pip install --no-cache-dir --no-deps "auto-round>=0.15.1")
+RUN pip install --no-cache-dir "nvidia-modelopt>=0.27" -c /opt/qopd/dev-constraints.txt
+RUN pip install --no-cache-dir "gguf>=0.10" -c /opt/qopd/dev-constraints.txt
+RUN python -c "import torch; print(torch.__version__)" > /opt/qopd/torch-version.quant \
+ && cmp /opt/qopd/torch-version.dev /opt/qopd/torch-version.quant \
+ && echo "torch unchanged: $(cat /opt/qopd/torch-version.quant)" \
+ && python -c "import llmcompressor, compressed_tensors, modelopt, gguf; print('imports ok', llmcompressor.__version__, compressed_tensors.__version__, modelopt.__version__)" \
+ && (pip check || true) > /opt/qopd/pip-check.txt; cat /opt/qopd/pip-check.txt
