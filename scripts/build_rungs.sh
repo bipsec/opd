@@ -14,11 +14,21 @@ restart() { echo "restarting resident vLLM $(date)" | tee -a "$LOG"; docker star
 trap restart EXIT
 echo "stopping resident vLLM $(date)" | tee -a "$LOG"
 docker stop vllm >>"$LOG" 2>&1
+sample_mem() {  # host memory every 30 s (unified memory: this is what the build competes for)
+  echo "t_unix,mem_available_kb,swap_free_kb" > "$1"
+  while true; do
+    echo "$(date +%s),$(awk '/MemAvailable/{print $2}' /proc/meminfo),$(awk '/SwapFree/{print $2}' /proc/meminfo)" >> "$1"
+    sleep 30
+  done
+}
 for rung in "$@"; do
   echo "=== $rung build start $(date)" | tee -a "$LOG"
+  sample_mem "runs/quant/mem_${rung}.csv" & SAMPLER=$!
   if ! docker run "${FLAGS[@]}" qopd-quant:26.10 qopd quant build "$rung" >>"$LOG" 2>&1; then
+    kill "$SAMPLER" 2>/dev/null
     echo "=== $rung BUILD FAILED $(date); stopping the chain" | tee -a "$LOG"; exit 1
   fi
+  kill "$SAMPLER" 2>/dev/null
   echo "=== $rung build ok $(date); smoke test + bench" | tee -a "$LOG"
   if ! docker run "${FLAGS[@]}" qopd-dev:26.10 qopd teacher bench --model "$rung" --n 200 >>"$LOG" 2>&1; then
     echo "=== $rung SMOKE TEST FAILED $(date); stopping the chain" | tee -a "$LOG"; exit 1

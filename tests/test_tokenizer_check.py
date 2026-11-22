@@ -76,7 +76,7 @@ def test_pre_tokenizer_fails():
 
 def test_local_rung_not_built():
     with pytest.raises(ModelNotFoundError, match="not built yet"):
-        verify_exists(resolve("T4-int"))
+        verify_exists(resolve("T2"))  # optional rung, not built
 
 
 def test_pin_revision_keeps_comments(tmp_path: Path):

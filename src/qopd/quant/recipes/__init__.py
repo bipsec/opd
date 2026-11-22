@@ -70,6 +70,11 @@ class LLMCompressorRecipe:
     format = ""
     tool = "llmcompressor"
     scheme = ""
+    # Every MoE expert sees all calibration tokens (default); a recipe can opt out (AWQ).
+    calibrate_all_experts = True
+
+    def _all_experts(self, kwargs: dict[str, Any]) -> bool:
+        return bool(kwargs.get("moe_calibrate_all_experts", self.calibrate_all_experts))
 
     def modifiers(self, ignore: list[str]) -> list[Any]:
         raise NotImplementedError
@@ -92,7 +97,7 @@ class LLMCompressorRecipe:
         ds = calibration_dataset(calibration, max_len, n)
         oneshot(
             model=model,
-            moe_calibrate_all_experts=bool(kwargs.get("moe_calibrate_all_experts", True)),
+            moe_calibrate_all_experts=self._all_experts(kwargs),
             dataset=ds,
             recipe=self.modifiers(ignore),
             max_seq_length=max_len,
@@ -110,7 +115,7 @@ class LLMCompressorRecipe:
             calibration_sha256=io.sha256_file(calibration),
             seconds=time.perf_counter() - t0,
             extra={
-                "moe_calibrate_all_experts": bool(kwargs.get("moe_calibrate_all_experts", True)),
+                "moe_calibrate_all_experts": self._all_experts(kwargs),
                 "scheme": self.scheme,
                 "ignore": ignore,
                 "max_seq_length": max_len,

@@ -4,7 +4,7 @@ import pytest
 
 from qopd.config import CONFIG_ROOT, ModelCfg, load
 from qopd.quant.recipes import IGNORE_DEFAULT, RecipeResult, calibration_dataset
-from qopd.quant.runner import RECIPES, build_rung, write_recipe_json
+from qopd.quant.runner import RECIPES, build_model, build_rung, write_recipe_json
 from qopd.utils import io
 
 
@@ -48,4 +48,13 @@ def test_build_rung_guards(tmp_path):
     with pytest.raises(ValueError, match="not a quantized rung"):
         build_rung("T16")
     with pytest.raises(FileNotFoundError, match="calib-traces"):
-        build_rung("T3", calibration=tmp_path / "missing.jsonl")  # T3 not built yet
+        build_model("S2", "fp8_w8a8", tmp_path / "out", calibration=tmp_path / "missing.jsonl")
+
+
+def test_awq_uses_routed_only_calibration():
+    from qopd.quant.recipes.awq_int4 import AWQInt4Recipe
+    from qopd.quant.recipes.fp8 import FP8Recipe
+
+    assert AWQInt4Recipe()._all_experts({}) is False
+    assert FP8Recipe()._all_experts({}) is True
+    assert AWQInt4Recipe()._all_experts({"moe_calibrate_all_experts": True}) is True
