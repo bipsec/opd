@@ -48,4 +48,4 @@ def test_build_rung_guards(tmp_path):
     with pytest.raises(ValueError, match="not a quantized rung"):
         build_rung("T16")
     with pytest.raises(FileNotFoundError, match="calib-traces"):
-        build_rung("T8", calibration=tmp_path / "missing.jsonl")
+        build_rung("T3", calibration=tmp_path / "missing.jsonl")  # T3 not built yet

@@ -422,6 +422,31 @@ def tab_throughput() -> str:
     )
 
 
+def tab_quant_validation() -> str:
+    data = _json(PROJECT_ROOT / "reports" / "quant_validation.json") or []
+    rows = [
+        [
+            tex(x["label"]),
+            f"{x['mean_abs_diff']:.3f}",
+            f"{x['median_abs_diff']:.4f}",
+            f"{x['p99_abs_diff']:.2f}",
+            f"{x['top1_agreement']:.3f}",
+            f"{x['topk_overlap']:.3f}",
+        ]
+        for x in data
+    ] or [[TBD] * 6]
+    return table(
+        "tab:quantval",
+        "Quantization tooling check on the 0.6B student: each format's "
+        "checkpoint, served by vLLM, against BF16 on the same 20 rollouts (log-probabilities "
+        "of the realized tokens, top-20).",
+        "lrrrrr",
+        ["Format", "mean $|\\Delta|$", "median", "p99", "top-1 agr.", "top-20 overlap"],
+        rows,
+        "reports/quant_validation.json",
+    )
+
+
 TABLES_ALL: dict[str, Callable[[], str]] = {
     "hardware": tab_hardware,
     "ladder": tab_ladder,
@@ -434,6 +459,7 @@ TABLES_ALL: dict[str, Callable[[], str]] = {
     "recovery": tab_recovery,
     "agreement": tab_agreement,
     "throughput": tab_throughput,
+    "quantval": tab_quant_validation,
 }
 
 

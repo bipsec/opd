@@ -79,7 +79,7 @@ def validate(
     n: int = 20,
     top_k: int = 20,
     kv_cache_gb: float = 4.0,
-    gpu_memory_utilization: float = 0.2,
+    gpu_memory_utilization: float = 0.12,  # fits beside the resident vLLM
 ) -> dict[str, Any]:
     """Score the same exact-id rollouts with the BF16 model and the quantized checkpoint in vLLM;
     write and return the comparison (``<quantized>/validation.json``)."""

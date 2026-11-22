@@ -12,7 +12,17 @@ run resumes from its own state file), so the full set of runs can be re-executed
 \input{tables/throughput}
 
 \section{Quantization recipes}\label{app:quant}
-\TBD{} \todo{tool versions, calibration hash and settings per rung, from each rung's
+All rungs are built with llm-compressor (0.15.0) from the same \calibN{} calibration texts, with
+every mixture-of-experts expert calibrated and the router gates and output head kept in BF16:
+FP8 W8A8 with static activation scales (T8), AWQ W4A16 with group size 128 (T4-int), NVFP4
+(T4-fp) and GPTQ W3A16 with group size 128 (T3). Quantization runs in a separate container from
+inference, and every checkpoint is loaded by the same vLLM build used for scoring. Before building
+teacher rungs we checked each format on the 0.6B student (Table~\ref{tab:quantval}); the formats
+order as expected, from FP8 closest to BF16 to 3-bit furthest.
+\todo{per-rung tool versions, timings and calibration hash from each rung's \texttt{recipe.json}}
+
+\input{tables/quantval}
+ \todo{tool versions, calibration hash and settings per rung, from each rung's
 \texttt{recipe.json}.}
 
 \section{Per-benchmark results}\label{app:perbench}
