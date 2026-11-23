@@ -10,7 +10,7 @@
     "load_delta_gb": 81.0052261352539,
     "kv_cache_gb": 16.0,
     "scored_tokens_per_s": 5318.052911725721,
-    "math500": null
+    "math500": 0.966
   },
   "T8": {
     "format": "W8A8-FP8",
@@ -23,7 +23,7 @@
     "load_delta_gb": 53.137516021728516,
     "kv_cache_gb": 16.0,
     "scored_tokens_per_s": 7123.796250770118,
-    "math500": null
+    "math500": 0.946
   },
   "T4-fp": {
     "format": "NVFP4",
@@ -36,7 +36,7 @@
     "load_delta_gb": 40.76131820678711,
     "kv_cache_gb": 16.0,
     "scored_tokens_per_s": 8775.367587958093,
-    "math500": null
+    "math500": 0.936
   },
   "T4-int": {
     "format": "W4A16",
@@ -49,7 +49,7 @@
     "load_delta_gb": 38.41295623779297,
     "kv_cache_gb": 16.0,
     "scored_tokens_per_s": 6748.70199207515,
-    "math500": null
+    "math500": 0.942
   },
   "T3": {
     "format": "W3A16",
@@ -62,7 +62,7 @@
     "load_delta_gb": 35.19771194458008,
     "kv_cache_gb": 16.0,
     "scored_tokens_per_s": 7007.496080064211,
-    "math500": null
+    "math500": 0.932
   },
   "T2": {
     "format": "Q2_K",

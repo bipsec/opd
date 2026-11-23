@@ -23,7 +23,9 @@ reasoning trace written by the BF16 teacher in chat format (thinking mode, tempe
 top-p 0.95) and cut at 2{,}048 tokens: \calibN{} texts averaging \calibMeanTok{} tokens, \calibAtLimit{}
 of which reach the limit. We record
 each rung's memory, load time, scoring throughput and its own MATH-500 accuracy; the latter is
-the ``teacher accuracy'' predictor in H2.
+the ``teacher accuracy'' predictor in H2. All rungs are built with llm-compressor and served by the same vLLM
+build; Appendix~\ref{app:quant} lists the recipes and three deviations from the planned
+toolchain.
 
 \input{tables/ladder}
 

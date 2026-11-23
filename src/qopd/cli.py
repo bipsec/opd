@@ -438,6 +438,19 @@ def data_verify(
     console.print(f"ok: {n} files match {manifest}", markup=False)
 
 
+@data_app.command("coldstart")
+def data_coldstart(
+    teacher: Annotated[str, typer.Option(help="Teacher that answers the prompts.")] = "T16",
+    kv_cache_gb: Annotated[float, typer.Option()] = 40.0,
+    limit: Annotated[int | None, typer.Option(help="Only the first N prompts (testing).")] = None,
+) -> None:
+    """Cold-start traces (PLAN 5.1): teacher answers each cold-start prompt once; keep correct."""
+    from qopd.train.coldstart import generate_coldstart  # noqa: PLC0415
+
+    for k, v in generate_coldstart(teacher, kv_cache_gb=kv_cache_gb, limit=limit).items():
+        console.print(f"{k:20s} {v}", markup=False)
+
+
 @data_app.command("report")
 def data_report() -> None:
     """Re-render reports/data.md from the stats files."""

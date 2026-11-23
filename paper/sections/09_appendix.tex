@@ -13,17 +13,24 @@ run resumes from its own state file), so the full set of runs can be re-executed
 
 \section{Quantization recipes}\label{app:quant}
 All rungs are built with llm-compressor (0.15.0) from the same \calibN{} calibration texts, with
-every mixture-of-experts expert calibrated and the router gates and output head kept in BF16:
-FP8 W8A8 with static activation scales (T8), AWQ W4A16 with group size 128 (T4-int), NVFP4
-(T4-fp) and GPTQ W3A16 with group size 128 (T3). Quantization runs in a separate container from
-inference, and every checkpoint is loaded by the same vLLM build used for scoring. Before building
-teacher rungs we checked each format on the 0.6B student (Table~\ref{tab:quantval}); the formats
-order as expected, from FP8 closest to BF16 to 3-bit furthest.
-\todo{per-rung tool versions, timings and calibration hash from each rung's \texttt{recipe.json}}
+the router gates and output head kept in BF16 (Table~\ref{tab:recipes}): FP8 W8A8 with static
+activation scales (T8), NVFP4 (T4-fp), AWQ W4A16 with group size 128 (T4-int) and GPTQ W3A16 with
+group size 128 (T3). Quantization runs in a separate container from inference, and every
+checkpoint is loaded by the same vLLM build used for scoring.
 
+\paragraph{Deviations from the planned toolchain.} Three choices differ from the experiment plan;
+all were made before any distillation run and apply to the whole study.
+(i) Every llm-compressor release pins an older PyTorch than the one in our GB10 container, so it
+is installed without that pin; before building teacher rungs we checked each format on the 0.6B
+student (Table~\ref{tab:quantval}), where the formats order as expected from FP8 (closest to
+BF16) to 3-bit. (ii) The 3-bit rung uses llm-compressor's GPTQ implementation instead of GPTQModel,
+which cannot be installed next to the container's numpy, PyTorch and transformers. (iii) For
+T4-int, AWQ calibrates each expert on the tokens the router sends it; with every expert seeing
+every calibration token (as for the other rungs) AWQ's cached activations exceeded the machine's
+128\,GB.
+
+\input{tables/recipes}
 \input{tables/quantval}
- \todo{tool versions, calibration hash and settings per rung, from each rung's
-\texttt{recipe.json}.}
 
 \section{Per-benchmark results}\label{app:perbench}
 \TBD{}

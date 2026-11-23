@@ -447,6 +447,36 @@ def tab_quant_validation() -> str:
     )
 
 
+def tab_recipes() -> str:
+    rows = []
+    for rid in ("T8", "T4-fp", "T4-int", "T3"):
+        r = _json(PROJECT_ROOT / "models" / "quant" / rid / "recipe.json")
+        if r is None:
+            rows.append([tex(rid)] + [TBD] * 5)
+            continue
+        ex = r["extra"]
+        rows.append(
+            [
+                tex(rid),
+                tex(ex["scheme"]),
+                f"{tex(r['tool'])} {tex(r['tool_version'])}",
+                "all" if ex.get("moe_calibrate_all_experts") else "routed only",
+                f"{r['seconds'] / 3600:.1f}",
+                f"\\texttt{{{r['calibration_sha256'][:8]}}}",
+            ]
+        )
+    return table(
+        "tab:recipes",
+        "Quantization recipes as built (from each rung's \\texttt{recipe.json}). "
+        "All rungs keep the router gates and output head in BF16 and use the same "
+        "calibration texts.",
+        "llllrl",
+        ["Rung", "Scheme", "Tool", "Experts calibrated", "Build (h)", "Calib. sha256"],
+        rows,
+        "models/quant/<rung>/recipe.json",
+    )
+
+
 TABLES_ALL: dict[str, Callable[[], str]] = {
     "hardware": tab_hardware,
     "ladder": tab_ladder,
@@ -460,6 +490,7 @@ TABLES_ALL: dict[str, Callable[[], str]] = {
     "agreement": tab_agreement,
     "throughput": tab_throughput,
     "quantval": tab_quant_validation,
+    "recipes": tab_recipes,
 }
 
 
