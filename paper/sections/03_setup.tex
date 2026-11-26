@@ -1,6 +1,6 @@
 \section{Experimental setup}\label{sec:setup}
 
-Every condition shares the student initialization, cold-start data, prompts, seeds, sampling
+Every condition shares the student initialization, prompts, seeds, sampling
 settings and evaluation harness; in the main grid only the teacher's precision changes, and no
 hyperparameter is re-tuned per teacher rung.
 
@@ -10,8 +10,8 @@ which token-level OPD requires. The main teacher is Qwen3-30B-A3B in thinking mo
 mixture-of-experts model with 30.5B total and 3.3B active parameters). The dense Qwen3-8B serves
 as a second teacher for the equal-memory comparison and separates mixture-of-experts from dense
 quantization effects. The students are Qwen3-1.7B (S1, main student) and Qwen3-0.6B (S2, cheap
-student for seeds and replication), starting from the post-trained checkpoints
-\todo{confirm post-trained vs.\ Base at the 1.4 checkpoint}. Every model is pinned to a Hub
+student for seeds and replication), starting from the official post-trained (thinking)
+checkpoints (Section~\ref{sec:setup-method}). Every model is pinned to a Hub
 commit. Before use, a hard check compares vocabulary, merges, added and special tokens, chat
 template and the tokenization pipeline of every teacher--student pair and refuses to run on any
 difference (verified for S1 vs.\ S2 and for Qwen3-30B-A3B vs.\ both students; Qwen3-8B \TBD).
@@ -88,13 +88,28 @@ we report truncation rates throughout.
 \input{tables/sanity}
 
 \subsection{Distillation procedure}\label{sec:setup-method}
-\paragraph{Cold start.} Each student is first fine-tuned for one epoch on the \nColdstart{}
-cold-start prompts answered once by the BF16 teacher in thinking mode, keeping only verified
-correct traces. This set is generated once and shared by every condition: \TBD{} verified traces
-\todo{count from step 5.1}. Traces are stored as exact token ids; any whose prompt plus response
-exceeds 8{,}192 tokens is dropped rather than truncated (\TBD{} dropped), and sequences are not
-packed. Training uses the settings of Table~\ref{tab:hparams}, with the loss averaged over all
-response tokens of each 32-sequence batch.
+\paragraph{Starting point.} Every condition starts from the official post-trained student. Our
+design originally prescribed an off-policy cold start---one epoch of SFT on the BF16 teacher's
+verified answers to the \nColdstart{} cold-start prompts, generated once and shared by every
+condition---and we built it. The teacher answers each prompt once (temperature 0.6, top-p 0.95)
+with a budget of 8{,}192 tokens for prompt plus response; a trace that reaches the limit has no
+final answer and is dropped rather than truncated. Of the \nColdstart{} answers, \csKept{}
+(\csKeptPct\%) are verified correct and finish within the limit (mean \csMeanTok{} tokens);
+\csAtLimit{} reach the limit and \csWrong{} finish with a wrong or missing answer. One epoch of SFT
+on these traces (Table~\ref{tab:hparams}; exact token ids, no packing, loss averaged over all
+response tokens of each 32-sequence batch) \emph{lowered} S2's accuracy
+(Table~\ref{tab:coldstart}): MATH-500 pass@1 fell from \csTwoMathBefore{} to \csTwoMathAfter{}
+and GSM8K from \csTwoGsmBefore{} to \csTwoGsmAfter{}. The student imitated the teacher's longer
+reasoning without the ability to conclude it, and the share of MATH-500 responses reaching the
+16{,}384-token limit rose from \csTwoMathTruncBefore\% to \csTwoMathTruncAfter\%; most truncated
+responses are unfinished reasoning, not repetition loops, and responses that do finish remain
+accurate. The Qwen3 students are already thinking models distilled from larger Qwen3
+models \citep{qwen3}, so the cold start adds nothing they lack while making them far longer than
+the \rolloutMaxTok{}-token OPD rollout cap. We therefore skip it (S1 was not cold-started) and
+start every condition from the official checkpoint; all comparisons between teacher rungs still
+share one initialization.
+
+\input{tables/coldstart}
 
 \paragraph{OPD rounds.} One round (i) samples \nPrompts{} prompts---the next block of a fixed
 seeded permutation of the training split, so no prompt repeats within a run---$\times$
@@ -140,10 +155,10 @@ and reproduces the uninterrupted run exactly (tested).
 \input{tables/hparams}
 
 \subsection{Baselines}
-\paragraph{Cold start only.} The starting checkpoints, evaluated with the same harness.
+\paragraph{No distillation.} The starting (official) checkpoints, evaluated with the same harness.
 
 \paragraph{Off-policy SFT.} Supervised fine-tuning on verified BF16-teacher traces for the
-training prompts, with the cold-start settings, \emph{compute-matched} to an OPD run: training
+training prompts, with the SFT settings of Table~\ref{tab:hparams}, \emph{compute-matched} to an OPD run: training
 stops once it has used as many response tokens as the matched OPD run trained on.
 
 \paragraph{RLVR.} GRPO \citep{shao2024grpo} with the verifier's 0/1 correctness as the only

@@ -1,0 +1,13 @@
+# Cold-start student S1 (PLAN 5.3): 1 epoch SFT on the shared T16 cold-start traces (step 5.1).
+# Output: runs/coldstart/coldstart_S1/checkpoints/final, linked as checkpoints/coldstart/S1.
+defaults:
+  sft: train/sft.yaml
+name: coldstart
+student: S1
+seeds: [0]
+node: local
+sft:
+  micro_batch_size: 1   # memory knob only (loss is micro-batch invariant); traces are not packed
+amendments:
+  - "Cold-start set has 2,605 verified traces, not 5,000: 2,065 of the 5,000 T16 answers reach the 8,192-token limit and are dropped (user: keep, 2026-11-24)."
+notes: ""

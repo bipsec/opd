@@ -181,6 +181,11 @@ def tab_hparams() -> str:
             f"AdamW ($\\beta$={so.betas[0]}, {so.betas[1]}; $\\epsilon$={sci(so.eps)})",
         ],
         [
+            "Precision",
+            "BF16 mixed (FP32 weights and AdamW states)",
+            "BF16 mixed (FP32 weights and AdamW states)",
+        ],
+        [
             "Weight decay / grad clip",
             f"{o.weight_decay:g} / {o.grad_clip_norm:g}",
             f"{so.weight_decay:g} / {so.grad_clip_norm:g}",
@@ -307,9 +312,45 @@ def tab_sanity() -> str:
     )
 
 
+def tab_coldstart() -> str:
+    """Before/after of the attempted cold start (reports/coldstart.json, step 5.3)."""
+    res = _json(PROJECT_ROOT / "reports" / "coldstart.json") or {}
+    rows: list[list[str]] = []
+    for st in ("S2", "S1"):
+        for suite, name in (("math500", "MATH-500"), ("gsm8k", "GSM8K")):
+            c = res.get(st, {}).get(suite)
+            if c is None:  # S1 was not cold-started (user decision, 2026-11-25)
+                continue
+            b, a = c["before"], c["after"]
+            lo, hi = c["diff_ci95"]
+            rows.append(
+                [
+                    st,
+                    name,
+                    pct(b["pass_at_1"]),
+                    pct(a["pass_at_1"]),
+                    f"${100 * c['diff']:+.1f}$ [${100 * lo:+.1f}$, ${100 * hi:+.1f}$]",
+                    f"{pct(b['truncation_rate'])} / {pct(a['truncation_rate'])}",
+                    f"{num(round(b['mean_tokens']))} / {num(round(a['mean_tokens']))}",
+                ]
+            )
+    return table(
+        "tab:coldstart",
+        "Attempted cold start: official student (before, 1 sample) vs.\\ after one epoch of SFT "
+        "on the BF16 teacher's verified traces (after; 4 samples on MATH-500, 1 on GSM8K). "
+        "pass@1 (\\%), paired per-problem difference with 95\\% interval, truncation at "
+        "16{,}384 tokens (\\%) and mean response tokens.",
+        "llrrlll",
+        ["Student", "Suite", "Before", "After", "$\\Delta$ [95\\% CI]", "Trunc.", "Tokens"],
+        rows,
+        "reports/coldstart.json (scripts/coldstart\\_report.py)",
+        note="S1 was not cold-started (decision after the S2 result).",
+    )
+
+
 def tab_main_results() -> str:
     rows = [[tex(s), tex(t)] + [TBD] * 6 for s in STUDENTS for t in LADDER[:5]]
-    rows += [[tex(s), b] + [TBD] * 6 for s in STUDENTS for b in ("cold start", "off-policy SFT")]
+    rows += [[tex(s), b] + [TBD] * 6 for s in STUDENTS for b in ("no OPD", "off-policy SFT")]
     rows += [["S1", "RLVR (GRPO)"] + [TBD] * 6]
     return table(
         "tab:main",
@@ -484,6 +525,7 @@ TABLES_ALL: dict[str, Callable[[], str]] = {
     "data": tab_data,
     "evals": tab_eval_suites,
     "sanity": tab_sanity,
+    "coldstart": tab_coldstart,
     "main": tab_main_results,
     "fidelity": tab_fidelity,
     "recovery": tab_recovery,
@@ -528,6 +570,21 @@ def number_macros() -> dict[str, str]:
     m["calibN"] = num(cal["n"]) if cal else TBD
     m["calibMeanTok"] = num(round(cal["total_tokens_mean"])) if cal else TBD
     m["calibAtLimit"] = num(cal["reached_limit"]) if cal else TBD
+    cs = _json(PROJECT_ROOT / "data" / "coldstart" / "coldstart_stats.json")
+    out = cs["outcomes"] if cs else {}
+    m["csKept"] = num(cs["n_kept"]) if cs else TBD
+    m["csKeptPct"] = pct(cs["kept_rate"]) if cs else TBD
+    m["csAtLimit"] = num(out.get("reached_limit", 0)) if cs else TBD
+    m["csWrong"] = num(sum(v for k, v in out.items() if k.startswith("dropped:"))) if cs else TBD
+    m["csMeanTok"] = num(round(cs["kept_tokens_mean"])) if cs else TBD
+    cr = (_json(PROJECT_ROOT / "reports" / "coldstart.json") or {}).get("S2", {})
+    cm, cg = cr.get("math500"), cr.get("gsm8k")
+    m["csTwoMathBefore"] = pct(cm["before"]["pass_at_1"]) if cm else TBD
+    m["csTwoMathAfter"] = pct(cm["after"]["pass_at_1"]) if cm else TBD
+    m["csTwoMathTruncAfter"] = pct(cm["after"]["truncation_rate"]) if cm else TBD
+    m["csTwoMathTruncBefore"] = pct(cm["before"]["truncation_rate"]) if cm else TBD
+    m["csTwoGsmBefore"] = pct(cg["before"]["pass_at_1"]) if cg else TBD
+    m["csTwoGsmAfter"] = pct(cg["after"]["pass_at_1"]) if cg else TBD
     tr = _json(PROJECT_ROOT / "reports" / "sanity_truncation.json")
     pub = _json(PROJECT_ROOT / "reports" / "published" / "qwen3_tech_report.json")
     for st, tag in (("S1", "One"), ("S2", "Two")):

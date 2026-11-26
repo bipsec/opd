@@ -158,7 +158,10 @@ def _response_logits(model: Any, pk: dict[str, torch.Tensor]) -> torch.Tensor:
     """Student logits that predict each response token: [B, T_max, V] (float32)."""
     import torch  # noqa: PLC0415
 
-    logits = model(input_ids=pk["ids"], attention_mask=pk["att"]).logits
+    from qopd.models.loading import train_autocast  # noqa: PLC0415
+
+    with train_autocast(model):
+        logits = model(input_ids=pk["ids"], attention_mask=pk["att"]).logits
     t_max = pk["resp"].shape[1]
     rows = []
     for i, st in enumerate(pk["starts"].tolist()):
@@ -385,7 +388,7 @@ def run_opd_spec(spec_path: Path, stop_after_rounds: int | None = None) -> dict[
     from qopd.config import PROJECT_ROOT, DataCfg, ExperimentCfg, load  # noqa: PLC0415
     from qopd.data.sources import read_parquet  # noqa: PLC0415
     from qopd.eval.verifiers import verify  # noqa: PLC0415
-    from qopd.models.loading import load_hf_model, load_tokenizer  # noqa: PLC0415
+    from qopd.models.loading import load_hf_model, load_tokenizer, save_hf_bf16  # noqa: PLC0415
     from qopd.models.registry import resolve  # noqa: PLC0415
     from qopd.prompts.templates import prompt_ids as build_prompt_ids  # noqa: PLC0415
     from qopd.rollout.engine import ReloadFromCheckpoint, RolloutEngine  # noqa: PLC0415
@@ -416,14 +419,13 @@ def run_opd_spec(spec_path: Path, stop_after_rounds: int | None = None) -> dict[
         max_logprobs=max(20, exp.opd.teacher_top_k),
         seed=exp.seeds[0],
     )
-    model = load_hf_model(student)
+    model = load_hf_model(student, dtype="float32")
     if exp.sft is not None and exp.sft.gradient_checkpointing:
         model.gradient_checkpointing_enable()
         model.config.use_cache = False
 
     def save_model(m: Any, out: Path) -> None:
-        m.save_pretrained(out, safe_serialization=True)
-        tok.save_pretrained(out)
+        save_hf_bf16(m, tok, out)
 
     def verifier(p: Problem, ids: list[int]) -> bool:
         return verify(p, tok.decode(ids, skip_special_tokens=True)).correct

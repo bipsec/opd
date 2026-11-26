@@ -46,7 +46,7 @@ def finalize(out_dir: Path = OUT_DIR, max_total: int = 8192) -> dict[str, Any]:
     for r in rows:
         key = (
             "kept"
-            if r in kept
+            if r["correct"] and r["finish_reason"] == "stop"
             else ("reached_limit" if r["finish_reason"] == "length" else f"dropped:{r['reason']}")
         )
         reasons[key] = reasons.get(key, 0) + 1
@@ -56,7 +56,10 @@ def finalize(out_dir: Path = OUT_DIR, max_total: int = 8192) -> dict[str, Any]:
         "n_kept": len(kept),
         "kept_rate": len(kept) / len(rows) if rows else float("nan"),
         "outcomes": dict(sorted(reasons.items())),
+        "n_correct": sum(bool(r["correct"]) for r in rows),
+        "n_finished": sum(r["finish_reason"] == "stop" for r in rows),
         "max_total_tokens": max_total,
+        "kept_response_tokens": sum(len(r["response_ids"]) for r in kept),
         "kept_tokens_mean": statistics.fmean(lens) if lens else float("nan"),
         "kept_tokens_median": statistics.median(lens) if lens else float("nan"),
         "kept_tokens_max": max(lens) if lens else 0,

@@ -252,8 +252,9 @@ class ReloadFromCheckpoint:
         out = self.ckpt_dir / f"sync_{step:06d}"
         tmp = out.with_name(out.name + ".tmp")
         shutil.rmtree(tmp, ignore_errors=True)
-        model.save_pretrained(tmp, safe_serialization=True)
-        self.tokenizer.save_pretrained(tmp)
+        from qopd.models.loading import save_hf_bf16  # noqa: PLC0415
+
+        save_hf_bf16(model, self.tokenizer, tmp)  # vLLM serves BF16; trainer keeps FP32
         shutil.rmtree(out, ignore_errors=True)
         tmp.rename(out)  # a crash mid-save never leaves a half-written sync dir
         self.last_save_s = time.perf_counter() - t0

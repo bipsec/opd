@@ -446,7 +446,9 @@ def data_coldstart(
 ) -> None:
     """Cold-start traces (PLAN 5.1): teacher answers each cold-start prompt once; keep correct."""
     from qopd.train.coldstart import generate_coldstart  # noqa: PLC0415
+    from qopd.utils.logging import setup_logging  # noqa: PLC0415
 
+    setup_logging()
     for k, v in generate_coldstart(teacher, kv_cache_gb=kv_cache_gb, limit=limit).items():
         console.print(f"{k:20s} {v}", markup=False)
 

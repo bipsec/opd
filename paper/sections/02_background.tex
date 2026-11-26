@@ -26,7 +26,9 @@ choices by feedback signal, teacher access and loss granularity \citep{opdsurvey
 token signal uninformative; \citet{understandingopd2026} propose an informativeness measure that
 we reuse as one of our fidelity metrics. \citet{rethinkingopd2026} find that alignment of
 thinking patterns matters more than raw teacher strength and that an off-policy cold start
-fixes many OPD failures; we therefore start every condition from the same cold-start student.
+fixes many OPD failures. Our students are already post-trained thinking models from the
+teacher's family, and a cold start on our teacher's traces lowered their accuracy
+(Section~\ref{sec:setup-method}), so every condition starts from the same official student.
 
 \paragraph{Quantization formats.} We study the formats a desktop practitioner would use for the
 teacher: FP8 weights and activations (W8A8), NVIDIA's 4-bit floating-point format (NVFP4),

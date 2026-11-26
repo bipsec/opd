@@ -7,6 +7,7 @@ PLAN 1.1/1.3/1.4. Every loader wraps the load in :func:`qopd.utils.memory.track_
 from __future__ import annotations
 
 import gc
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -18,17 +19,58 @@ from qopd.utils.memory import track_memory
 log = get_logger("models")
 
 
-def load_hf_model(cfg: ModelCfg | str, revision: str | None = None, device: str = "cuda") -> Any:
-    """Load an ``AutoModelForCausalLM`` in BF16 (training / reference scoring)."""
+def load_hf_model(
+    cfg: ModelCfg | str,
+    revision: str | None = None,
+    device: str = "cuda",
+    dtype: str = "bfloat16",
+) -> Any:
+    """Load an ``AutoModelForCausalLM``.
+
+    ``dtype="bfloat16"`` for reference scoring. Trainers pass ``"float32"``: BF16 mixed precision
+    keeps FP32 master weights (and FP32 AdamW states) and runs the forward under BF16 autocast
+    (:func:`train_autocast`). Pure-BF16 weights would round away most updates at lr <= 1e-5.
+    """
     import torch  # noqa: PLC0415
     from transformers import AutoModelForCausalLM  # noqa: PLC0415
 
     path = cfg.path if isinstance(cfg, ModelCfg) else cfg
     rev = cfg.revision if isinstance(cfg, ModelCfg) and cfg.source_type == "hf" else revision
-    with track_memory(f"load HF {path}", log):
-        return AutoModelForCausalLM.from_pretrained(path, revision=rev, dtype=torch.bfloat16).to(
-            device
-        )
+    with track_memory(f"load HF {path} ({dtype})", log):
+        return AutoModelForCausalLM.from_pretrained(
+            path, revision=rev, dtype=getattr(torch, dtype)
+        ).to(device)
+
+
+def train_autocast(model: Any) -> Any:
+    """BF16 autocast for an FP32 model on CUDA; a no-op otherwise (CPU tests, BF16 models)."""
+    import contextlib  # noqa: PLC0415
+
+    import torch  # noqa: PLC0415
+
+    p = next(model.parameters())
+    if p.is_cuda and p.dtype == torch.float32:
+        return torch.autocast("cuda", dtype=torch.bfloat16)
+    return contextlib.nullcontext()
+
+
+def save_hf_bf16(model: Any, tokenizer: Any, out: str | Path) -> None:
+    """Save ``model`` as BF16 safetensors (what vLLM serves) without changing the live model."""
+    import torch  # noqa: PLC0415
+
+    sd = {
+        k: (v.detach().to(torch.bfloat16) if v.is_floating_point() else v)
+        for k, v in model.state_dict().items()
+    }
+    model.save_pretrained(out, state_dict=sd, safe_serialization=True)
+    # save_pretrained records the live (FP32) dtype; vLLM's dtype="auto" reads it from here.
+    cfg_path = Path(out) / "config.json"
+    cfg = json.loads(cfg_path.read_text())
+    for key in ("dtype", "torch_dtype"):
+        if key in cfg or key == "dtype":
+            cfg[key] = "bfloat16"
+    cfg_path.write_text(json.dumps(cfg, indent=2, sort_keys=True) + "\n")
+    tokenizer.save_pretrained(out)
 
 
 def load_tokenizer(cfg: ModelCfg, local_files_only: bool = False) -> Any:

@@ -3,7 +3,7 @@
 E1 asks, without any training, how faithfully each quantized teacher reproduces the BF16
 teacher's per-token reward on the rollouts the student actually produces.
 
-\paragraph{Protocol.} For each cold-started student we sample a fixed pool from the \nProbe{}
+\paragraph{Protocol.} For each starting student we sample a fixed pool from the \nProbe{}
 probe prompts (four rollouts each, 2{,}000 in total) with the OPD rollout settings, and store the
 exact token ids. The student's log-probability and entropy at every response position are
 recomputed in one forward pass of the student, the same computation the OPD trainer uses. Every

@@ -7,6 +7,7 @@
     Setting & OPD & Cold-start SFT \\
     \midrule
     Optimizer & AdamW ($\beta$=0.9, 0.999; $\epsilon$=$10^{-8}$) & AdamW ($\beta$=0.9, 0.999; $\epsilon$=$10^{-8}$) \\
+    Precision & BF16 mixed (FP32 weights and AdamW states) & BF16 mixed (FP32 weights and AdamW states) \\
     Weight decay / grad clip & 0 / 1 & 0 / 1 \\
     Learning rate & sweep 5e-7, 1e-6, 2e-6 (T16), then frozen & $10^{-5}$ \\
     Schedule & linear warmup 5 rounds, constant & warmup 3\%, cosine to 10\% \\

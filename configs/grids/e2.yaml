@@ -22,7 +22,7 @@ blocks:
   - kind: eval
     students: [S1, S2]
     seeds: [0]
-    note: baseline, cold start only (evaluation)
+    note: baseline, starting student only (official post-trained; cold start skipped, user 2026-11-25)
   - kind: sft_offpolicy
     students: [S1, S2]
     teachers: [T16]

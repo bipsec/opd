@@ -237,7 +237,7 @@ def run_grpo_spec(spec_path: Path, stop_after_rounds: int | None = None) -> dict
     from qopd.config import PROJECT_ROOT, DataCfg, ExperimentCfg, GRPOCfg, load  # noqa: PLC0415
     from qopd.data.sources import read_parquet  # noqa: PLC0415
     from qopd.eval.verifiers import verify  # noqa: PLC0415
-    from qopd.models.loading import load_hf_model, load_tokenizer  # noqa: PLC0415
+    from qopd.models.loading import load_hf_model, load_tokenizer, save_hf_bf16  # noqa: PLC0415
     from qopd.models.registry import resolve  # noqa: PLC0415
     from qopd.prompts.templates import prompt_ids as build_prompt_ids  # noqa: PLC0415
     from qopd.rollout.engine import ReloadFromCheckpoint, RolloutEngine  # noqa: PLC0415
@@ -263,11 +263,10 @@ def run_grpo_spec(spec_path: Path, stop_after_rounds: int | None = None) -> dict
         max_model_len=1024 + exp.opd.rollout.max_tokens,
         seed=exp.seeds[0],
     )
-    model = load_hf_model(student)
+    model = load_hf_model(student, dtype="float32")
 
     def save_model(m: Any, out: Path) -> None:
-        m.save_pretrained(out, safe_serialization=True)
-        tok.save_pretrained(out)
+        save_hf_bf16(m, tok, out)
 
     comps = LoopComponents(
         model=model,

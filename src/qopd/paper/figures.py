@@ -45,7 +45,7 @@ RUNG_COLOR = {
 }
 RUNG_ORDER = ("T16", "T8", "T4-fp", "T4-int", "T3", "T2")
 REF_STYLE = {
-    "coldstart": ("cold start", (0, (1, 2))),
+    "coldstart": ("no OPD", (0, (1, 2))),
     "sft": ("off-policy SFT", (0, (4, 2))),
     "rlvr": ("RLVR (GRPO)", (0, (6, 2, 1, 2))),
 }

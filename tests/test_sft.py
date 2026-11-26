@@ -1,6 +1,7 @@
 """PLAN 5.2: SFT trainer on a tiny random Qwen3 (CPU, float32)."""
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -164,8 +165,35 @@ def test_s2_sft_smoke_gpu(tmp_path):
     resp.append(tok.convert_tokens_to_ids("<|im_end|>"))
     ex = [Example(prompt_ids(tok, p), resp) for p in smoke_problems(8)]
     run = create_run_dir("sft", "s2smoke", {"x": 1}, root=tmp_path)
-    model = load_hf_model(m)
+    model = load_hf_model(m, dtype="float32")  # trainers: FP32 master weights + BF16 autocast
     c = cfg(lr=1e-5, global_batch_size=4, micro_batch_size=2, epochs=1, gradient_checkpointing=True)
     st = train_sft(c, run, model, int(tok.pad_token_id), ex, device="cuda")
     rows = io.read_jsonl(run.metrics)
     assert st["step"] == 2 and all(r["torch_allocated_gb"] is not None for r in rows)
+    assert all(math.isfinite(r["loss"]) for r in rows)
+
+
+def test_save_hf_bf16_keeps_live_model_fp32(tmp_path):
+    """Trainers keep FP32 master weights; checkpoints for vLLM are written in BF16."""
+    import json
+
+    from safetensors.torch import load_file
+
+    from qopd.models.loading import save_hf_bf16, train_autocast
+
+    class Tok:
+        def save_pretrained(self, out):
+            (Path(out) / "tok.json").write_text("{}")
+
+    model = tiny_model()
+    ref = {k: v.clone() for k, v in model.state_dict().items()}
+    save_hf_bf16(model, Tok(), tmp_path / "ck")
+    w = load_file(tmp_path / "ck" / "model.safetensors")
+    assert w and all(v.dtype == torch.bfloat16 for v in w.values())
+    cfg = json.loads((tmp_path / "ck" / "config.json").read_text())
+    assert cfg.get("dtype", cfg.get("torch_dtype")) == "bfloat16"
+    assert all(v.dtype == torch.float32 for v in model.state_dict().values())
+    assert all(torch.equal(ref[k], v) for k, v in model.state_dict().items())
+    with train_autocast(model):  # CPU model: no autocast, output stays FP32
+        out = model(input_ids=torch.tensor([[1, 2, 3]])).logits
+    assert out.dtype == torch.float32

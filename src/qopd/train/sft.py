@@ -128,6 +128,8 @@ def train_sft(
     """Train ``model`` in place; returns the final state. Resumes from ``run`` if possible."""
     import torch  # noqa: PLC0415
 
+    from qopd.models.loading import train_autocast  # noqa: PLC0415
+
     if not examples:
         raise ValueError("no training examples")
     gbs = cfg.global_batch_size
@@ -189,7 +191,8 @@ def train_sft(
         loss_sum = 0.0
         for j in range(0, len(batch), mbs):
             b = {k: v.to(device) for k, v in collate(batch[j : j + mbs], pad_id).items()}
-            logits = model(input_ids=b["input_ids"], attention_mask=b["attention_mask"]).logits
+            with train_autocast(model):
+                logits = model(input_ids=b["input_ids"], attention_mask=b["attention_mask"]).logits
             loss, _ = response_token_loss(logits, b["labels"])
             (loss / n_tok).backward()
             loss_sum += float(loss.detach())
@@ -216,6 +219,17 @@ def train_sft(
                 "torch_allocated_gb": mem.torch_allocated_gb,
             }
         )
+        log.info(
+            "step %d/%d loss %.4f lr %.2e grad_norm %.3f tokens %d %.1fs mem %.1f GB",
+            step,
+            total_steps,
+            loss_sum / n_tok,
+            lr,
+            grad_norm,
+            n_tok,
+            time.perf_counter() - t0,
+            mem.mem_used_gb,
+        )
         if (
             step % cfg.checkpoint_every_steps == 0
             or step == total_steps
@@ -237,7 +251,7 @@ def run_sft(spec_path: Path) -> Path:
     """CLI entry (``qopd train sft --spec``): load model + traces, train, save, mark DONE."""
     from qopd.config import PROJECT_ROOT as ROOT  # noqa: PLC0415
     from qopd.config import ExperimentCfg, load  # noqa: PLC0415
-    from qopd.models.loading import load_hf_model, load_tokenizer  # noqa: PLC0415
+    from qopd.models.loading import load_hf_model, load_tokenizer, save_hf_bf16  # noqa: PLC0415
     from qopd.models.registry import resolve  # noqa: PLC0415
     from qopd.utils.logging import setup_logging  # noqa: PLC0415
     from qopd.utils.monitor import Monitor  # noqa: PLC0415
@@ -262,11 +276,10 @@ def run_sft(spec_path: Path) -> Path:
         dropped_overlong=dropped,
         traces_sha256=io.sha256_file(traces if traces.is_absolute() else ROOT / traces),
     )
-    model = load_hf_model(mcfg)
+    model = load_hf_model(mcfg, dtype="float32")
 
     def save_final(m: Any, out: Path) -> None:
-        m.save_pretrained(out, safe_serialization=True)
-        tok.save_pretrained(out)
+        save_hf_bf16(m, tok, out)
 
     with Monitor(run.monitor):
         train_sft(exp.sft, run, model, int(tok.pad_token_id), examples, save_final)

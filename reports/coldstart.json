@@ -1,0 +1,56 @@
+{
+  "S2": {
+    "math500": {
+      "before_run": "S2__gsm8k+math500__n1__t16384__s0",
+      "after_run": "S2-cs__math500__n4__t16384__s0",
+      "before": {
+        "n_problems": 500,
+        "samples_per_problem": 1.0,
+        "pass_at_1": 0.724,
+        "truncation_rate": 0.076,
+        "acc_finished": 0.7835497835497836,
+        "mean_tokens": 5256.308
+      },
+      "after": {
+        "n_problems": 500,
+        "samples_per_problem": 4.0,
+        "pass_at_1": 0.588,
+        "truncation_rate": 0.297,
+        "acc_finished": 0.8357041251778093,
+        "mean_tokens": 8672.2025
+      },
+      "diff": -0.136,
+      "diff_ci95": [
+        -0.16680394290666692,
+        -0.1051960570933331
+      ],
+      "n_paired": 500
+    },
+    "gsm8k": {
+      "before_run": "S2__gsm8k+math500__n1__t16384__s0",
+      "after_run": "S2-cs__gsm8k__n1__t16384__s0",
+      "before": {
+        "n_problems": 1319,
+        "samples_per_problem": 1.0,
+        "pass_at_1": 0.8059135708870356,
+        "truncation_rate": 0.004548900682335102,
+        "acc_finished": 0.8095963442498096,
+        "mean_tokens": 2039.0394238059137
+      },
+      "after": {
+        "n_problems": 1319,
+        "samples_per_problem": 1.0,
+        "pass_at_1": 0.6997725549658832,
+        "truncation_rate": 0.10765731614859743,
+        "acc_finished": 0.784197111299915,
+        "mean_tokens": 4583.0045489006825
+      },
+      "diff": -0.10614101592115238,
+      "diff_ci95": [
+        -0.129415672824362,
+        -0.08286635901794276
+      ],
+      "n_paired": 1319
+    }
+  }
+}
